@@ -1,11 +1,12 @@
 language: go
 sudo: false
 go:
-  - 1.7
   - 1.8
   - 1.9
 
 install:
+  - go get -u github.com/golang/dep/...
+  - dep ensure
   - go get golang.org/x/tools/cmd/cover github.com/mattn/goveralls
 
 script:
