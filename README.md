@@ -1,6 +1,8 @@
 # scnr 
 
-[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat-square)](https://godoc.org/github.com/blockloop/scnr)[![Travis](https://img.shields.io/travis/blockloop/scnr.svg?style=flat-square)](https://travis-ci.org/blockloop/scnr)[![Coveralls github](https://img.shields.io/coveralls/github/blockloop/scnr.svg?style=flat-square)](https://coveralls.io/github/blockloop/scnr)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat-square)](https://godoc.org/github.com/blockloop/scnr)
+[![Travis](https://img.shields.io/travis/blockloop/scnr.svg?style=flat-square)](https://travis-ci.org/blockloop/scnr)
+[![Coveralls github](https://img.shields.io/coveralls/github/blockloop/scnr.svg?style=flat-square)](https://coveralls.io/github/blockloop/scnr)
 
 scnr provides the ability to use database/sql/rows to scan datasets directly to structs or slices. 
 For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org/github.com/blockloop/scnr)
