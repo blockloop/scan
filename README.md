@@ -10,18 +10,35 @@ For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org
 ## Example
 
 ```go
+/// multiple rows
+///
+
 db, err := sql.Open("sqlite3", ":memory:")
-panicIfErr(err)
+// handle err
 
 rows, err := db.Query("SELECT * FROM persons where name = 'brett'")
-panicIfErr(err)
+// handle err
 
 var persons []Person
 
 err := scnr.Rows(&persons, rows)
-panicIfErr(err)
+// handle err
 
 fmt.Printf("%#v", persons)
+
+/// Single row
+///
+
+rows, err := db.Query("SELECT * FROM persons where name = 'brett' LIMIT 1")
+// handle err
+
+var person Person
+
+err := scnr.Row(&person, rows)
+// handle err
+
+fmt.Printf("%#v", person)
+
 ```
 
 ## Why
