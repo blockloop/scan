@@ -11,20 +11,15 @@ For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org
 
 ```go
 db, err := sql.Open("sqlite3", ":memory:")
-if err != nil {
-    panic(fmt.Errorf("could not connect to db: %s", err)
-}
+panicIfErr(err)
 
 rows, err := db.Query("SELECT * FROM persons where name = 'brett'")
-if err != nil {
-    panic(fmt.Errorf("could not query db: %s", err)
-}
+panicIfErr(err)
 
 var persons []Person
 
-if err := scnr.Rows(&persons, rows); err != nil {
-    panic(fmt.Errorf("could not scan items: %s", err)
-}
+err := scnr.Rows(&persons, rows)
+panicIfErr(err)
 
 fmt.Printf("%#v", persons)
 ```
