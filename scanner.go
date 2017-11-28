@@ -2,9 +2,21 @@ package scnr
 
 import (
 	"database/sql"
+	"errors"
 	"reflect"
 	"strings"
 )
+
+// ErrTooManyColumns indicates that a select query returned multiple columns and
+// Rows attempted to bind to a slice of a primitive type. For example, trying to bind
+// `select col1, col2 from mytable`  to []string
+var ErrTooManyColumns = errors.New("too many columns returned for primitive slice")
+
+// Scalar is a wrapper for (sql.DB).Scan(value). It is here to provide consistency
+// for users and offeres nothing more
+func Scalar(v interface{}, scanner Scanner) error {
+	return scanner.Scan(v)
+}
 
 // Row scans a single row into a single variable
 func Row(v interface{}, rows RowsScanner) error {
@@ -44,18 +56,19 @@ func Rows(v interface{}, rows RowsScanner) error {
 	if err != nil {
 		return err
 	}
+	isPrimitive := itemType.Kind() != reflect.Struct
 
 	for rows.Next() {
 		sliceItem := reflect.New(itemType).Elem()
 
-		pointers := make([]interface{}, 0, len(cols))
-		for _, colName := range cols {
-			fieldVal := fieldByName(sliceItem, itemType, colName)
-			if !fieldVal.IsValid() || !fieldVal.CanSet() {
-				continue
+		var pointers []interface{}
+		if isPrimitive {
+			if len(cols) > 1 {
+				return ErrTooManyColumns
 			}
-
-			pointers = append(pointers, fieldVal.Addr().Interface())
+			pointers = []interface{}{sliceItem.Addr().Interface()}
+		} else {
+			pointers = structPointers(sliceItem, cols)
 		}
 
 		if len(pointers) == 0 {
@@ -68,10 +81,12 @@ func Rows(v interface{}, rows RowsScanner) error {
 		}
 		sliceVal.Set(reflect.Append(sliceVal, sliceItem))
 	}
-	return nil
+	return rows.Err()
 }
 
-func fieldByName(v reflect.Value, elemType reflect.Type, name string) reflect.Value {
+// fieldByName gets a struct's field by first looking up the db struct tag and falling
+// back to the field's name in Title case.
+func fieldByName(v reflect.Value, name string) reflect.Value {
 	typ := v.Type()
 
 	for i := 0; i < v.NumField(); i++ {
@@ -83,13 +98,32 @@ func fieldByName(v reflect.Value, elemType reflect.Type, name string) reflect.Va
 	return v.FieldByName(strings.Title(name))
 }
 
-// RowsScanner is a database scanner for many rows
+func structPointers(stct reflect.Value, cols []string) []interface{} {
+	pointers := make([]interface{}, 0, len(cols))
+	for _, colName := range cols {
+		fieldVal := fieldByName(stct, colName)
+		if !fieldVal.IsValid() || !fieldVal.CanSet() {
+			continue
+		}
+
+		pointers = append(pointers, fieldVal.Addr().Interface())
+	}
+	return pointers
+}
+
+// RowsScanner is a database scanner for many rows. It is most commonly the result of
+// *(database/sql).DB.Query(...) but can be mocked or stubbed
 type RowsScanner interface {
 	Scan(dest ...interface{}) error
-	Close() error
 	Columns() ([]string, error)
 	ColumnTypes() ([]*sql.ColumnType, error)
 	Err() error
 	Next() bool
 	NextResultSet() bool
+}
+
+// Scanner is a single row scanner. It is most commonly the result of
+// *(database/sql).DB.QueryRow(...) but can be mocked or stubbed
+type Scanner interface {
+	Scan(dest ...interface{}) error
 }

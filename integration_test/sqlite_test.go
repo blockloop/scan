@@ -127,6 +127,58 @@ func TestScanRowShouldScanMultipleItemsWithTags(t *testing.T) {
 	assert.EqualValues(t, 100, items[1].MyAge)
 }
 
+func TestScanRowShouldScanPrimitiveTypesStrings(t *testing.T) {
+	schema := `CREATE TABLE IF NOT EXISTS persons (
+		name VARCHAR(120),
+		age TINYINT
+	);
+
+	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
+	`
+	db := makeDBSchema(t, schema)
+	row, err := db.Query(`SELECT name FROM persons ORDER BY name ASC`)
+	require.NoError(t, err, "execute query")
+
+	var items []string
+	assert.NoError(t, scnr.Rows(&items, row), "Row")
+	assert.EqualValues(t, []string{"brett", "jones"}, items)
+}
+
+func TestScanRowShouldScanPrimitiveTypesInts(t *testing.T) {
+	schema := `CREATE TABLE IF NOT EXISTS persons (
+		name VARCHAR(120),
+		age TINYINT
+	);
+
+	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
+	`
+	db := makeDBSchema(t, schema)
+	row, err := db.Query(`SELECT age FROM persons ORDER BY name ASC`)
+	require.NoError(t, err, "execute query")
+
+	var items []int
+	assert.NoError(t, scnr.Rows(&items, row), "Row")
+	assert.EqualValues(t, []int{100, 100}, items)
+}
+
+func TestScanRowShouldScanPrimitiveTypesInterface(t *testing.T) {
+	schema := `CREATE TABLE IF NOT EXISTS persons (
+		name VARCHAR(120),
+		age TINYINT
+	);
+
+	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
+	`
+	db := makeDBSchema(t, schema)
+	row, err := db.Query(`SELECT age FROM persons ORDER BY name ASC`)
+	require.NoError(t, err, "execute query")
+
+	var items []interface{}
+	assert.NoError(t, scnr.Rows(&items, row), "Row")
+	// int64 is what Scan uses by default for numbers
+	assert.Equal(t, []interface{}{int64(100), int64(100)}, items)
+}
+
 func TestScanRowsShouldScanAllColumnTypes(t *testing.T) {
 	db := makeDBSchema(t, allTypesSchema)
 
