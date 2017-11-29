@@ -1,4 +1,6 @@
-package scnr
+// Package scan provides functionality for scanning database/sql rows into slices,
+// structs, and primative types dynamically
+package scan
 
 import (
 	"database/sql"
@@ -10,14 +12,14 @@ import (
 var (
 	// ErrTooManyColumns indicates that a select query returned multiple columns and
 	// attempted to bind to a slice of a primitive type. For example, trying to bind
-	// `select col1, col2 from mytable`  to []string
+	// `select col1, col2 from mytable` to []string
 	ErrTooManyColumns = errors.New("too many columns returned for primitive slice")
 
 	// nothing is a pointer to a string which will be scanned for columns that have no place
 	// on the struct
 	nothing = reflect.New(reflect.TypeOf("")).Elem().Addr().Interface()
 
-	// AutoClose is true when scnr should automatically close Scanner when the scan
+	// AutoClose is true when scan should automatically close Scanner when the scan
 	// is complete. If you set it to false, then you must defer rows.Close() manually
 	AutoClose = true
 )
@@ -28,13 +30,13 @@ func Scalar(v interface{}, scanner Scanner) error {
 	return scanner.Scan(v)
 }
 
-// One scans a single row into a single variable
-func One(v interface{}, rows RowsScanner) error {
+// Row scans a single row into a single variable
+func Row(v interface{}, rows RowsScanner) error {
 	vType := reflect.TypeOf(v).Elem()
 	vVal := reflect.ValueOf(v).Elem()
 
 	sl := reflect.New(reflect.SliceOf(vType))
-	err := Slice(sl.Interface(), rows)
+	err := Rows(sl.Interface(), rows)
 	if err != nil {
 		return err
 	}
@@ -48,8 +50,8 @@ func One(v interface{}, rows RowsScanner) error {
 	return nil
 }
 
-// Slice scans sql rows into a slice (v)
-func Slice(v interface{}, rows RowsScanner) error {
+// Rows scans sql rows into a slice (v)
+func Rows(v interface{}, rows RowsScanner) error {
 	if AutoClose {
 		defer rows.Close()
 	}

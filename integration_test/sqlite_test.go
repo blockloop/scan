@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blockloop/scnr"
+	"github.com/blockloop/scan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -40,7 +40,7 @@ func TestScanOneScansSingleItem(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var item Item
-	require.NoError(t, scnr.One(&item, row))
+	require.NoError(t, scan.Row(&item, row))
 	assert.EqualValues(t, "brett", item.Name)
 	assert.EqualValues(t, 100, item.Age)
 }
@@ -63,7 +63,7 @@ func TestScanOneScansSingleItemWithTags(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var item Item
-	require.NoError(t, scnr.One(&item, row))
+	require.NoError(t, scan.Row(&item, row))
 	assert.EqualValues(t, "brett", item.MyName)
 	assert.EqualValues(t, 100, item.MyAge)
 }
@@ -86,7 +86,7 @@ func TestScanOneScansMultipleItems(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []Item
-	require.NoError(t, scnr.Slice(&items, row), "Slice")
+	require.NoError(t, scan.Rows(&items, row))
 	require.NotNil(t, items)
 	assert.EqualValues(t, "brett", items[0].Name)
 	assert.EqualValues(t, 100, items[0].Age)
@@ -112,7 +112,7 @@ func TestScanOneScansMultipleItemsWithTags(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []Item
-	require.NoError(t, scnr.Slice(&items, row), "Slice")
+	require.NoError(t, scan.Rows(&items, row))
 	require.Len(t, items, 2)
 	assert.EqualValues(t, "brett", items[0].MyName)
 	assert.EqualValues(t, 100, items[0].MyAge)
@@ -133,7 +133,7 @@ func TestScanOneScansPrimitiveTypesStrings(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []string
-	assert.NoError(t, scnr.Slice(&items, row))
+	assert.NoError(t, scan.Rows(&items, row))
 	assert.EqualValues(t, []string{"brett", "jones"}, items)
 }
 
@@ -150,7 +150,7 @@ func TestScanOneScansPrimitiveTypesInts(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []int
-	assert.NoError(t, scnr.Slice(&items, row))
+	assert.NoError(t, scan.Rows(&items, row))
 	assert.EqualValues(t, []int{100, 100}, items)
 }
 
@@ -167,7 +167,7 @@ func TestScanOneScansPrimitiveTypesInterface(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []interface{}
-	assert.NoError(t, scnr.Slice(&items, row))
+	assert.NoError(t, scan.Rows(&items, row))
 	// int64 is what Scan uses by default for numbers
 	assert.Equal(t, []interface{}{int64(100), int64(100)}, items)
 }
@@ -190,20 +190,20 @@ func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 
 	var items []Item
 
-	assert.NoError(t, scnr.Slice(&items, row))
+	assert.NoError(t, scan.Rows(&items, row))
 	assert.EqualValues(t, []Item{
 		{Name: "brett"},
 		{Name: "jones"},
 	}, items)
 }
 
-func TestScanSliceScansAllColumnTypes(t *testing.T) {
+func TestScanRowsScansAllColumnTypes(t *testing.T) {
 	db := makeDBSchema(t, allTypesSchema)
 
 	var items []rowItem
 	rows, err := db.Query(`SELECT * FROM all_types LIMIT 1`)
 	require.NoError(t, err)
-	err = scnr.Slice(&items, rows)
+	err = scan.Rows(&items, rows)
 	require.NoError(t, err)
 
 	assert.EqualValues(t, 2147483640, items[0].ColInt)

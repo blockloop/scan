@@ -1,16 +1,16 @@
-package scnr_test
+package scan_test
 
 import (
 	"database/sql"
 	"testing"
 
-	"github.com/blockloop/scnr"
+	"github.com/blockloop/scan"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func BenchmarkScnrRowOneField(b *testing.B) {
+func BenchmarkScanRowOneField(b *testing.B) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(b, err)
 
@@ -30,7 +30,7 @@ func BenchmarkScnrRowOneField(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rows, _ := db.Query(`SELECT name FROM persons LIMIT 1`)
 		var it item
-		scnr.One(&it, rows)
+		scan.Row(&it, rows)
 		rows.Close()
 	}
 }
@@ -61,7 +61,7 @@ func BenchmarkDirectScanOneField(b *testing.B) {
 	}
 }
 
-func BenchmarkScnrRowFiveFields(b *testing.B) {
+func BenchmarkScanRowFiveFields(b *testing.B) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(b, err)
 
@@ -89,7 +89,7 @@ func BenchmarkScnrRowFiveFields(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rows, _ := db.Query(`SELECT * FROM persons LIMIT 1`)
 		var it item
-		scnr.One(&it, rows)
+		scan.Row(&it, rows)
 		rows.Close()
 	}
 }
@@ -134,7 +134,7 @@ func BenchmarkDirectScanFiveFields(b *testing.B) {
 	}
 }
 
-func BenchmarkScnrRowsOneField(b *testing.B) {
+func BenchmarkScanRowsOneField(b *testing.B) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(b, err)
 
@@ -151,7 +151,7 @@ func BenchmarkScnrRowsOneField(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rows, _ := db.Query(`SELECT name FROM persons`)
 		var it []item
-		scnr.Slice(&it, rows)
+		scan.Rows(&it, rows)
 		rows.Close()
 	}
 }
