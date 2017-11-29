@@ -15,13 +15,18 @@ var (
 	// `select col1, col2 from mytable` to []string
 	ErrTooManyColumns = errors.New("too many columns returned for primitive slice")
 
-	// nothing is a pointer to a string which will be scanned for columns that have no place
-	// on the struct
-	nothing = reflect.New(reflect.TypeOf("")).Elem().Addr().Interface()
+	// ErrSliceForRow occurs when trying to use Row on a slice
+	ErrSliceForRow = errors.New("cannot scan Row into slice")
 
 	// AutoClose is true when scan should automatically close Scanner when the scan
 	// is complete. If you set it to false, then you must defer rows.Close() manually
 	AutoClose = true
+)
+
+var (
+	// nothing is a pointer which will be scanned to for columns that have no place
+	// on the struct
+	nothing = reflect.New(reflect.TypeOf([]byte{})).Elem().Addr().Interface()
 )
 
 // Scalar is a wrapper for (sql.DB).Scan(value). It is here to provide consistency
@@ -34,6 +39,9 @@ func Scalar(v interface{}, scanner Scanner) error {
 func Row(v interface{}, rows RowsScanner) error {
 	vType := reflect.TypeOf(v).Elem()
 	vVal := reflect.ValueOf(v).Elem()
+	if vType.Kind() == reflect.Slice {
+		return ErrSliceForRow
+	}
 
 	sl := reflect.New(reflect.SliceOf(vType))
 	err := Rows(sl.Interface(), rows)

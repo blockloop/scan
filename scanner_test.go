@@ -317,6 +317,18 @@ func TestErrorsWhenMoreThanOneColumnForPrimitiveSlice(t *testing.T) {
 	rs.AssertExpectations(t)
 }
 
+func TestErrorsWhenScanRowToSlice(t *testing.T) {
+	rs := &mocks.RowsScanner{}
+
+	var persons []struct {
+		ID int
+	}
+
+	err := scan.Row(&persons, rs)
+	assert.EqualValues(t, scan.ErrSliceForRow, err)
+	rs.AssertExpectations(t)
+}
+
 type simpleQueue struct {
 	items []interface{}
 	m     *sync.Mutex
