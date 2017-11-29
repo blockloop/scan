@@ -359,6 +359,19 @@ func TestScalarClosesIfCloserWasSuppliedAndAutoCloseIsTrue(t *testing.T) {
 	rs.AssertExpectations(t)
 }
 
+func TestRowPanicsWhenItemIsNotAPointer(t *testing.T) {
+	rs := &mocks.RowsScanner{}
+
+	var item struct {
+		First string
+	}
+
+	assert.Panics(t, func() {
+		scan.Row(item, rs)
+	})
+	rs.AssertExpectations(t)
+}
+
 type simpleQueue struct {
 	items []interface{}
 	m     *sync.Mutex

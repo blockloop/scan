@@ -43,7 +43,12 @@ func Scalar(v interface{}, scanner Scanner) error {
 
 // Row scans a single row into a single variable
 func Row(v interface{}, rows RowsScanner) error {
-	vType := reflect.TypeOf(v).Elem()
+	vType := reflect.TypeOf(v)
+	if k := vType.Kind(); k != reflect.Ptr {
+		panic(k.String() + ": must be a pointer")
+	}
+
+	vType = vType.Elem()
 	vVal := reflect.ValueOf(v).Elem()
 	if vType.Kind() == reflect.Slice {
 		return ErrSliceForRow
