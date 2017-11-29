@@ -28,13 +28,13 @@ func Scalar(v interface{}, scanner Scanner) error {
 	return scanner.Scan(v)
 }
 
-// Row scans a single row into a single variable
-func Row(v interface{}, rows RowsScanner) error {
+// One scans a single row into a single variable
+func One(v interface{}, rows RowsScanner) error {
 	vType := reflect.TypeOf(v).Elem()
 	vVal := reflect.ValueOf(v).Elem()
 
 	sl := reflect.New(reflect.SliceOf(vType))
-	err := Rows(sl.Interface(), rows)
+	err := Slice(sl.Interface(), rows)
 	if err != nil {
 		return err
 	}
@@ -48,8 +48,8 @@ func Row(v interface{}, rows RowsScanner) error {
 	return nil
 }
 
-// Rows scans sql rows into a slice (v)
-func Rows(v interface{}, rows RowsScanner) error {
+// Slice scans sql rows into a slice (v)
+func Slice(v interface{}, rows RowsScanner) error {
 	if AutoClose {
 		defer rows.Close()
 	}

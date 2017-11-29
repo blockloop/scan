@@ -22,7 +22,7 @@ func makeDBSchema(t *testing.T, schema string) *sql.DB {
 	return db
 }
 
-func TestScanRowScansSingleItem(t *testing.T) {
+func TestScanOneScansSingleItem(t *testing.T) {
 	type Item struct {
 		Name string
 		Age  int8
@@ -40,12 +40,12 @@ func TestScanRowScansSingleItem(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var item Item
-	require.NoError(t, scnr.Row(&item, row), "Row")
+	require.NoError(t, scnr.One(&item, row))
 	assert.EqualValues(t, "brett", item.Name)
 	assert.EqualValues(t, 100, item.Age)
 }
 
-func TestScanRowScansSingleItemWithTags(t *testing.T) {
+func TestScanOneScansSingleItemWithTags(t *testing.T) {
 	type Item struct {
 		MyName string `db:"name"`
 		MyAge  int8   `db:"age"`
@@ -63,12 +63,12 @@ func TestScanRowScansSingleItemWithTags(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var item Item
-	require.NoError(t, scnr.Row(&item, row), "Row")
+	require.NoError(t, scnr.One(&item, row))
 	assert.EqualValues(t, "brett", item.MyName)
 	assert.EqualValues(t, 100, item.MyAge)
 }
 
-func TestScanRowScansMultipleItems(t *testing.T) {
+func TestScanOneScansMultipleItems(t *testing.T) {
 	type Item struct {
 		Name string
 		Age  int8
@@ -86,7 +86,7 @@ func TestScanRowScansMultipleItems(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []Item
-	require.NoError(t, scnr.Rows(&items, row), "Row")
+	require.NoError(t, scnr.Slice(&items, row), "Slice")
 	require.NotNil(t, items)
 	assert.EqualValues(t, "brett", items[0].Name)
 	assert.EqualValues(t, 100, items[0].Age)
@@ -94,7 +94,7 @@ func TestScanRowScansMultipleItems(t *testing.T) {
 	assert.EqualValues(t, 100, items[1].Age)
 }
 
-func TestScanRowScansMultipleItemsWithTags(t *testing.T) {
+func TestScanOneScansMultipleItemsWithTags(t *testing.T) {
 	type Item struct {
 		MyName string `db:"name"`
 		MyAge  int8   `db:"age"`
@@ -112,7 +112,7 @@ func TestScanRowScansMultipleItemsWithTags(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []Item
-	require.NoError(t, scnr.Rows(&items, row), "Row")
+	require.NoError(t, scnr.Slice(&items, row), "Slice")
 	require.Len(t, items, 2)
 	assert.EqualValues(t, "brett", items[0].MyName)
 	assert.EqualValues(t, 100, items[0].MyAge)
@@ -120,7 +120,7 @@ func TestScanRowScansMultipleItemsWithTags(t *testing.T) {
 	assert.EqualValues(t, 100, items[1].MyAge)
 }
 
-func TestScanRowScansPrimitiveTypesStrings(t *testing.T) {
+func TestScanOneScansPrimitiveTypesStrings(t *testing.T) {
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -133,11 +133,11 @@ func TestScanRowScansPrimitiveTypesStrings(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []string
-	assert.NoError(t, scnr.Rows(&items, row), "Row")
+	assert.NoError(t, scnr.Slice(&items, row))
 	assert.EqualValues(t, []string{"brett", "jones"}, items)
 }
 
-func TestScanRowScansPrimitiveTypesInts(t *testing.T) {
+func TestScanOneScansPrimitiveTypesInts(t *testing.T) {
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -150,11 +150,11 @@ func TestScanRowScansPrimitiveTypesInts(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []int
-	assert.NoError(t, scnr.Rows(&items, row), "Row")
+	assert.NoError(t, scnr.Slice(&items, row))
 	assert.EqualValues(t, []int{100, 100}, items)
 }
 
-func TestScanRowScansPrimitiveTypesInterface(t *testing.T) {
+func TestScanOneScansPrimitiveTypesInterface(t *testing.T) {
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -167,12 +167,12 @@ func TestScanRowScansPrimitiveTypesInterface(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []interface{}
-	assert.NoError(t, scnr.Rows(&items, row), "Row")
+	assert.NoError(t, scnr.Slice(&items, row))
 	// int64 is what Scan uses by default for numbers
 	assert.Equal(t, []interface{}{int64(100), int64(100)}, items)
 }
 
-func TestScanRowScansWhenMoreColumnsThanProperties(t *testing.T) {
+func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -190,20 +190,20 @@ func TestScanRowScansWhenMoreColumnsThanProperties(t *testing.T) {
 
 	var items []Item
 
-	assert.NoError(t, scnr.Rows(&items, row), "Row")
+	assert.NoError(t, scnr.Slice(&items, row))
 	assert.EqualValues(t, []Item{
 		{Name: "brett"},
 		{Name: "jones"},
 	}, items)
 }
 
-func TestScanRowsScansAllColumnTypes(t *testing.T) {
+func TestScanSliceScansAllColumnTypes(t *testing.T) {
 	db := makeDBSchema(t, allTypesSchema)
 
 	var items []rowItem
 	rows, err := db.Query(`SELECT * FROM all_types LIMIT 1`)
 	require.NoError(t, err)
-	err = scnr.Rows(&items, rows)
+	err = scnr.Slice(&items, rows)
 	require.NoError(t, err)
 
 	assert.EqualValues(t, 2147483640, items[0].ColInt)

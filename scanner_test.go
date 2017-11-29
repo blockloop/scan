@@ -31,7 +31,7 @@ func TestRowsConvertsColumnNamesToTitleText(t *testing.T) {
 		First string
 	}
 
-	require.NoError(t, scnr.Row(&item, rs))
+	require.NoError(t, scnr.One(&item, rs))
 	assert.Equal(t, "Brett Jones", item.First)
 	rs.AssertExpectations(t)
 }
@@ -53,7 +53,7 @@ func TestRowsUsesTagName(t *testing.T) {
 		FirstAndLastName string `db:"first_and_last_name"`
 	}
 
-	require.NoError(t, scnr.Row(&item, rs))
+	require.NoError(t, scnr.One(&item, rs))
 	assert.Equal(t, "Brett Jones", item.FirstAndLastName)
 	rs.AssertExpectations(t)
 }
@@ -72,7 +72,7 @@ func TestRowsIgnoresUnsetableColumns(t *testing.T) {
 		firstAndLastName string `db:"first_and_last_name"`
 	}
 
-	require.NoError(t, scnr.Row(&item, rs))
+	require.NoError(t, scnr.One(&item, rs))
 	rs.AssertExpectations(t)
 }
 
@@ -89,7 +89,7 @@ func TestErrorsWhenScanErrors(t *testing.T) {
 		FirstAndLastName string `db:"first_and_last_name"`
 	}
 
-	err := scnr.Row(&item, rs)
+	err := scnr.One(&item, rs)
 	assert.Equal(t, scanErr, err)
 	rs.AssertExpectations(t)
 }
@@ -98,7 +98,7 @@ func TestRowsPanicsWhenNotGivenAPointer(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 
 	assert.Panics(t, func() {
-		scnr.Rows("hello", rs)
+		scnr.Slice("hello", rs)
 	})
 }
 
@@ -107,7 +107,7 @@ func TestRowsPanicsWhenNotGivenAPointerToSlice(t *testing.T) {
 
 	var item struct{}
 	assert.Panics(t, func() {
-		scnr.Rows(&item, rs)
+		scnr.Slice(&item, rs)
 	})
 }
 
@@ -121,7 +121,7 @@ func TestErrorsWhenColumnsReturnsError(t *testing.T) {
 		Name string
 		Age  int
 	}
-	err := scnr.Rows(&items, rs)
+	err := scnr.Slice(&items, rs)
 	assert.Equal(t, columnsErr, err)
 	rs.AssertExpectations(t)
 }
@@ -136,7 +136,7 @@ func TestDoesNothingWhenNoColumns(t *testing.T) {
 		Name string
 		Age  int
 	}
-	err := scnr.Rows(&items, rs)
+	err := scnr.Slice(&items, rs)
 	assert.NoError(t, err)
 	assert.Nil(t, items)
 	rs.AssertExpectations(t)
@@ -153,7 +153,7 @@ func TestDoesNothingWhenNextIsFalse(t *testing.T) {
 		Name string
 		Age  int
 	}
-	err := scnr.Rows(&items, rs)
+	err := scnr.Slice(&items, rs)
 	assert.NoError(t, err)
 	assert.Nil(t, items)
 	rs.AssertExpectations(t)
@@ -182,7 +182,7 @@ func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
 		Last  string
 	}
 
-	require.NoError(t, scnr.Rows(&items, rs))
+	require.NoError(t, scnr.Slice(&items, rs))
 	require.Len(t, items, 2)
 	assert.Equal(t, "Brett", items[0].First)
 	assert.Equal(t, "Jones", items[0].Last)
@@ -217,7 +217,7 @@ func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
 		Age   int8
 	}
 
-	require.NoError(t, scnr.Rows(&items, rs))
+	require.NoError(t, scnr.Slice(&items, rs))
 	require.Len(t, items, 2)
 	assert.EqualValues(t, "Brett", items[0].First)
 	assert.EqualValues(t, "", items[0].Last)
@@ -267,7 +267,7 @@ func TestReturnsScannerError(t *testing.T) {
 		Name string
 	}
 
-	err := scnr.Rows(&persons, rs)
+	err := scnr.Slice(&persons, rs)
 	assert.EqualValues(t, scanErr, err)
 	rs.AssertExpectations(t)
 }
@@ -298,7 +298,7 @@ func TestScansPrimitiveSlices(t *testing.T) {
 
 		var scanned []interface{}
 
-		require.NoError(t, scnr.Rows(&scanned, rs))
+		require.NoError(t, scnr.Slice(&scanned, rs))
 		assert.EqualValues(t, items, scanned)
 		rs.AssertExpectations(t)
 	}
@@ -312,7 +312,7 @@ func TestErrorsWhenMoreThanOneColumnForPrimitiveSlice(t *testing.T) {
 
 	var fnames []string
 
-	err := scnr.Rows(&fnames, rs)
+	err := scnr.Slice(&fnames, rs)
 	assert.EqualValues(t, scnr.ErrTooManyColumns, err)
 	rs.AssertExpectations(t)
 }

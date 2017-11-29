@@ -30,7 +30,7 @@ func BenchmarkScnrRowOneField(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rows, _ := db.Query(`SELECT name FROM persons LIMIT 1`)
 		var it item
-		scnr.Row(&it, rows)
+		scnr.One(&it, rows)
 		rows.Close()
 	}
 }
@@ -89,7 +89,7 @@ func BenchmarkScnrRowFiveFields(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rows, _ := db.Query(`SELECT * FROM persons LIMIT 1`)
 		var it item
-		scnr.Row(&it, rows)
+		scnr.One(&it, rows)
 		rows.Close()
 	}
 }
@@ -151,7 +151,7 @@ func BenchmarkScnrRowsOneField(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rows, _ := db.Query(`SELECT name FROM persons`)
 		var it []item
-		scnr.Rows(&it, rows)
+		scnr.Slice(&it, rows)
 		rows.Close()
 	}
 }
