@@ -232,6 +232,7 @@ func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
 
 func TestScalarScansOneColumnOneRow(t *testing.T) {
 	rs := &mocks.RowsScanner{}
+	rs.On("Close").Return(nil)
 	rs.On("Scan", mock.Anything).Run(func(args mock.Arguments) {
 		assert.Len(t, args, 1)
 	}).Return(nil).Once()
@@ -246,6 +247,7 @@ func TestScalarReturnsErrorWhenScanErrors(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 
 	var name string
+	rs.On("Close").Return(nil)
 	rs.On("Scan", mock.Anything).Run(func(mock.Arguments) {
 		name = "brett"
 	}).Return(nil)
@@ -345,6 +347,18 @@ func TestRowReturnsErrNoRowsWhenQueryHasNoRows(t *testing.T) {
 	rs.AssertExpectations(t)
 }
 
+func TestScalarClosesIfCloserWasSuppliedAndAutoCloseIsTrue(t *testing.T) {
+	rs := &mocks.RowsScanner{}
+	rs.On("Close").Return(nil)
+
+	rs.On("Scan", mock.Anything).Return(nil).Once()
+
+	var name string
+	assert.NoError(t, scan.Scalar(&name, rs))
+
+	rs.AssertExpectations(t)
+}
+
 type simpleQueue struct {
 	items []interface{}
 	m     *sync.Mutex
@@ -360,7 +374,7 @@ func newSimpleQueue(items []interface{}) *simpleQueue {
 func (q *simpleQueue) Push(v interface{}) {
 	q.m.Lock()
 	defer q.m.Unlock()
-	q.items = append(q.items, v)
+	q.items = append([]interface{}{v}, q.items...)
 }
 
 func (q *simpleQueue) Pop() (v interface{}, ok bool) {

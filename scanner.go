@@ -5,6 +5,7 @@ package scan
 import (
 	"database/sql"
 	"errors"
+	"io"
 	"reflect"
 	"strings"
 )
@@ -32,6 +33,11 @@ var (
 // Scalar is a wrapper for (sql.DB).Scan(value). It is here to provide consistency
 // for users and offeres nothing more
 func Scalar(v interface{}, scanner Scanner) error {
+	if closer, ok := scanner.(io.Closer); ok {
+		if AutoClose {
+			defer closer.Close()
+		}
+	}
 	return scanner.Scan(v)
 }
 
