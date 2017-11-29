@@ -7,12 +7,11 @@
 scnr provides the ability to use database/sql/rows to scan datasets directly to structs or slices. 
 For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org/github.com/blockloop/scnr)
 
-## Example
+## Examples
 
+### Multiple Rows
 ```go
-/// Multiple rows
-
-db, err := sql.Open("sqlite3", ":memory:")
+db, err := sql.Open("sqlite3", "database.sqlite")
 rows, err := db.Query("SELECT * FROM persons")
 var persons []Person
 err := scnr.Slice(&persons, rows)
@@ -23,10 +22,10 @@ fmt.Printf("%#v", persons)
 //    {ID: 2, Name: "fred"},
 //    {ID: 3, Name: "stacy"},
 // }
+```
+### Multiple rows of primative type
 
-/// Multiple rows of primative type
-
-db, err := sql.Open("sqlite3", ":memory:")
+```go
 rows, err := db.Query("SELECT name FROM persons")
 var names []string
 err := scnr.Slice(&names, rows)
@@ -37,21 +36,25 @@ fmt.Printf("%#v", names)
 //    "fred",
 //    "stacy",
 // }
+```
 
-/// Single row
+### Single row
 
+```go
 rows, err := db.Query("SELECT * FROM persons where name = 'brett' LIMIT 1")
 var person Person
 err := scnr.One(&person, rows)
 
 fmt.Printf("%#v", person)
 // Person{ ID: 1, Name: "brett" }
+```
 
-/// Scalar value
+### Scalar value
 
-rows, err := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
+```go
+row := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
 var age int8
-err := scnr.Scalar(&age, rows)
+err := scnr.Scalar(&age, row)
 
 fmt.Printf("%d", age)
 // 100
