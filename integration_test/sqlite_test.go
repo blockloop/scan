@@ -38,7 +38,6 @@ func TestScanRowScansSingleItem(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons LIMIT 1`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	var item Item
 	require.NoError(t, scnr.Row(&item, row), "Row")
@@ -62,7 +61,6 @@ func TestScanRowScansSingleItemWithTags(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons LIMIT 1`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	var item Item
 	require.NoError(t, scnr.Row(&item, row), "Row")
@@ -86,7 +84,6 @@ func TestScanRowScansMultipleItems(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	var items []Item
 	require.NoError(t, scnr.Rows(&items, row), "Row")
@@ -113,7 +110,6 @@ func TestScanRowScansMultipleItemsWithTags(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	var items []Item
 	require.NoError(t, scnr.Rows(&items, row), "Row")
@@ -135,7 +131,6 @@ func TestScanRowScansPrimitiveTypesStrings(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT name FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	var items []string
 	assert.NoError(t, scnr.Rows(&items, row), "Row")
@@ -153,7 +148,6 @@ func TestScanRowScansPrimitiveTypesInts(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT age FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	var items []int
 	assert.NoError(t, scnr.Rows(&items, row), "Row")
@@ -171,7 +165,6 @@ func TestScanRowScansPrimitiveTypesInterface(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT age FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	var items []interface{}
 	assert.NoError(t, scnr.Rows(&items, row), "Row")
@@ -190,7 +183,6 @@ func TestScanRowScansWhenMoreColumnsThanProperties(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
-	defer row.Close()
 
 	type Item struct {
 		Name string `db:"name"`
@@ -211,7 +203,6 @@ func TestScanRowsScansAllColumnTypes(t *testing.T) {
 	var items []rowItem
 	rows, err := db.Query(`SELECT * FROM all_types LIMIT 1`)
 	require.NoError(t, err)
-	defer rows.Close()
 	err = scnr.Rows(&items, rows)
 	require.NoError(t, err)
 
