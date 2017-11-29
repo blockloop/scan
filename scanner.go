@@ -7,10 +7,20 @@ import (
 	"strings"
 )
 
-// ErrTooManyColumns indicates that a select query returned multiple columns and
-// Rows attempted to bind to a slice of a primitive type. For example, trying to bind
-// `select col1, col2 from mytable`  to []string
-var ErrTooManyColumns = errors.New("too many columns returned for primitive slice")
+var (
+	// ErrTooManyColumns indicates that a select query returned multiple columns and
+	// Rows attempted to bind to a slice of a primitive type. For example, trying to bind
+	// `select col1, col2 from mytable`  to []string
+	ErrTooManyColumns = errors.New("too many columns returned for primitive slice")
+
+	// nothing is a pointer to a string which will be scanned for columns that have no place
+	// on the struct
+	nothing = reflect.New(reflect.TypeOf("")).Elem().Addr().Interface()
+
+	// AutoClose is true when scnr should automatically close Scanner when the scan
+	// is complete. If you set it to false, then you must defer rows.Close() manually
+	AutoClose = true
+)
 
 // Scalar is a wrapper for (sql.DB).Scan(value). It is here to provide consistency
 // for users and offeres nothing more
@@ -40,6 +50,9 @@ func Row(v interface{}, rows RowsScanner) error {
 
 // Rows scans sql rows into a slice (v)
 func Rows(v interface{}, rows RowsScanner) error {
+	if AutoClose {
+		defer rows.Close()
+	}
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
 		panic(k.String() + ": must be a pointer to a slice")
@@ -107,7 +120,6 @@ func structPointers(stct reflect.Value, cols []string) []interface{} {
 			// have to add if we found a column because Scan() requires
 			// len(cols) arguments or it will error. This way we can scan to
 			// nowhere
-			nothing := reflect.New(reflect.TypeOf("")).Elem().Addr().Interface()
 			pointers = append(pointers, nothing)
 			continue
 		}
@@ -120,6 +132,7 @@ func structPointers(stct reflect.Value, cols []string) []interface{} {
 // RowsScanner is a database scanner for many rows. It is most commonly the result of
 // *(database/sql).DB.Query(...) but can be mocked or stubbed
 type RowsScanner interface {
+	Close() error
 	Scan(dest ...interface{}) error
 	Columns() ([]string, error)
 	ColumnTypes() ([]*sql.ColumnType, error)

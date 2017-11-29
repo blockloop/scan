@@ -16,6 +16,7 @@ import (
 func TestRowsConvertsColumnNamesToTitleText(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"first"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Once()
 	rs.On("Next").Return(false)
 	rs.On("Scan", mock.Anything).Run(func(args mock.Arguments) {
@@ -38,6 +39,7 @@ func TestRowsConvertsColumnNamesToTitleText(t *testing.T) {
 func TestRowsUsesTagName(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"first_and_last_name"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Once()
 	rs.On("Next").Return(false)
 	rs.On("Scan", mock.Anything).Run(func(args mock.Arguments) {
@@ -59,6 +61,7 @@ func TestRowsUsesTagName(t *testing.T) {
 func TestRowsIgnoresUnsetableColumns(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"first_and_last_name"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Once()
 	rs.On("Next").Return(false)
 	rs.On("Scan", mock.Anything).Return(nil)
@@ -76,6 +79,7 @@ func TestRowsIgnoresUnsetableColumns(t *testing.T) {
 func TestErrorsWhenScanErrors(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"first_and_last_name"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Once()
 	rs.On("Next").Return(false)
 	scanErr := errors.New("broken")
@@ -111,6 +115,7 @@ func TestErrorsWhenColumnsReturnsError(t *testing.T) {
 	columnsErr := errors.New("broken")
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return(nil, columnsErr)
+	rs.On("Close").Return(nil)
 
 	var items []struct {
 		Name string
@@ -124,6 +129,7 @@ func TestErrorsWhenColumnsReturnsError(t *testing.T) {
 func TestDoesNothingWhenNoColumns(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Once()
 
 	var items []struct {
@@ -139,6 +145,7 @@ func TestDoesNothingWhenNoColumns(t *testing.T) {
 func TestDoesNothingWhenNextIsFalse(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"col_int"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(false)
 	rs.On("Err").Return(nil)
 
@@ -155,6 +162,7 @@ func TestDoesNothingWhenNextIsFalse(t *testing.T) {
 func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"first", "last", "age"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Twice()
 	rs.On("Next").Return(false)
 	rs.On("Err").Return(nil)
@@ -186,6 +194,7 @@ func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
 func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"first", "age"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Twice()
 	rs.On("Next").Return(false)
 	rs.On("Err").Return(nil)
@@ -250,6 +259,7 @@ func TestReturnsScannerError(t *testing.T) {
 
 	rs := &mocks.RowsScanner{}
 	rs.On("Err").Return(scanErr)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(false)
 	rs.On("Columns").Return([]string{"name"}, nil)
 
@@ -275,6 +285,7 @@ func TestScansPrimitiveSlices(t *testing.T) {
 
 		rs := &mocks.RowsScanner{}
 		rs.On("Columns").Return([]string{"whatever"}, nil)
+		rs.On("Close").Return(nil).Once()
 		rs.On("Next").Return(true).Times(len(items))
 		rs.On("Next").Return(false)
 		rs.On("Err").Return(nil)
@@ -296,6 +307,7 @@ func TestScansPrimitiveSlices(t *testing.T) {
 func TestErrorsWhenMoreThanOneColumnForPrimitiveSlice(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"fname", "lname"}, nil)
+	rs.On("Close").Return(nil).Once()
 	rs.On("Next").Return(true).Once()
 
 	var fnames []string
