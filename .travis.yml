@@ -10,6 +10,5 @@ install:
   - go get golang.org/x/tools/cmd/cover github.com/mattn/goveralls
 
 script:
-  - go test ./integration_test/
   - go test -coverprofile=.coverprofile .
   - goveralls -coverprofile=.coverprofile -service=travis-ci -repotoken $COVERALLS_API_TOKEN

@@ -1,4 +1,4 @@
-package integration_test
+package scan_test
 
 import (
 	"database/sql"
@@ -23,6 +23,9 @@ func makeDBSchema(t *testing.T, schema string) *sql.DB {
 }
 
 func TestScanOneScansSingleItem(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	type Item struct {
 		Name string
 		Age  int8
@@ -46,6 +49,9 @@ func TestScanOneScansSingleItem(t *testing.T) {
 }
 
 func TestScanOneScansSingleItemWithTags(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	type Item struct {
 		MyName string `db:"name"`
 		MyAge  int8   `db:"age"`
@@ -69,6 +75,9 @@ func TestScanOneScansSingleItemWithTags(t *testing.T) {
 }
 
 func TestScanOneScansMultipleItems(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	type Item struct {
 		Name string
 		Age  int8
@@ -95,6 +104,9 @@ func TestScanOneScansMultipleItems(t *testing.T) {
 }
 
 func TestScanOneScansMultipleItemsWithTags(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	type Item struct {
 		MyName string `db:"name"`
 		MyAge  int8   `db:"age"`
@@ -121,6 +133,9 @@ func TestScanOneScansMultipleItemsWithTags(t *testing.T) {
 }
 
 func TestScanOneScansPrimitiveTypesStrings(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -138,6 +153,9 @@ func TestScanOneScansPrimitiveTypesStrings(t *testing.T) {
 }
 
 func TestScanOneScansPrimitiveTypesInts(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -155,6 +173,9 @@ func TestScanOneScansPrimitiveTypesInts(t *testing.T) {
 }
 
 func TestScanOneScansPrimitiveTypesInterface(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -173,6 +194,9 @@ func TestScanOneScansPrimitiveTypesInterface(t *testing.T) {
 }
 
 func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
 		age TINYINT
@@ -198,6 +222,9 @@ func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 }
 
 func TestScanRowsScansAllColumnTypes(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	db := makeDBSchema(t, allTypesSchema)
 
 	var items []rowItem
