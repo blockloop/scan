@@ -1,9 +1,7 @@
 package integration_test
 
 import (
-	"context"
 	"database/sql"
-	"io/ioutil"
 	"testing"
 	"time"
 
@@ -15,15 +13,10 @@ import (
 )
 
 func makeDBSchema(t *testing.T, schema string) *sql.DB {
-	f, err := ioutil.TempFile("", "")
+	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(t, err)
 
-	db, err := sql.Open("sqlite3", f.Name())
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	_, err = db.ExecContext(ctx, schema)
+	_, err = db.Exec(schema)
 	require.NoError(t, err)
 
 	return db
@@ -45,6 +38,7 @@ func TestScanRowShouldScanSingleItem(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons LIMIT 1`)
 	require.NoError(t, err, "execute query")
+	defer row.Close()
 
 	var item Item
 	require.NoError(t, scnr.Row(&item, row), "Row")
@@ -68,6 +62,7 @@ func TestScanRowShouldScanSingleItemWithTags(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons LIMIT 1`)
 	require.NoError(t, err, "execute query")
+	defer row.Close()
 
 	var item Item
 	require.NoError(t, scnr.Row(&item, row), "Row")
@@ -91,6 +86,7 @@ func TestScanRowShouldScanMultipleItems(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
+	defer row.Close()
 
 	var items []Item
 	require.NoError(t, scnr.Rows(&items, row), "Row")
@@ -117,6 +113,7 @@ func TestScanRowShouldScanMultipleItemsWithTags(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT * FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
+	defer row.Close()
 
 	var items []Item
 	require.NoError(t, scnr.Rows(&items, row), "Row")
@@ -138,6 +135,7 @@ func TestScanRowShouldScanPrimitiveTypesStrings(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT name FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
+	defer row.Close()
 
 	var items []string
 	assert.NoError(t, scnr.Rows(&items, row), "Row")
@@ -155,6 +153,7 @@ func TestScanRowShouldScanPrimitiveTypesInts(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT age FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
+	defer row.Close()
 
 	var items []int
 	assert.NoError(t, scnr.Rows(&items, row), "Row")
@@ -172,6 +171,7 @@ func TestScanRowShouldScanPrimitiveTypesInterface(t *testing.T) {
 	db := makeDBSchema(t, schema)
 	row, err := db.Query(`SELECT age FROM persons ORDER BY name ASC`)
 	require.NoError(t, err, "execute query")
+	defer row.Close()
 
 	var items []interface{}
 	assert.NoError(t, scnr.Rows(&items, row), "Row")
@@ -185,6 +185,7 @@ func TestScanRowsShouldScanAllColumnTypes(t *testing.T) {
 	var items []rowItem
 	rows, err := db.Query(`SELECT * FROM all_types LIMIT 1`)
 	require.NoError(t, err)
+	defer rows.Close()
 	err = scnr.Rows(&items, rows)
 	require.NoError(t, err)
 
