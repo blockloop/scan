@@ -56,4 +56,23 @@ row := db.QueryRow("SELECT age FROM persons where name = 'brett' LIMIT 1")
 // should be one row with one column 'age'
 var age int8
 row.Scan(&age)
+
+## Benchmarks
+
+I created some benchmarks in [scanner_bench_test.go](scanner_bench_test.go) to compare using `scnr` against
+manually scanning directly to structs and/or appending to slices
+
+```
+→ go test -bench=. -benchtime=5s ./
+goos: darwin
+goarch: amd64
+pkg: github.com/blockloop/scnr
+BenchmarkScnrRowOneField-8               1000000              9956 ns/op
+BenchmarkDirectScanOneField-8            1000000              9111 ns/op
+BenchmarkScnrRowFiveFields-8              500000             21125 ns/op
+BenchmarkDirectScanFiveFields-8           500000             16446 ns/op
+BenchmarkScnrRowsOneField-8               500000             17365 ns/op
+BenchmarkDirectScanManyOneField-8         500000             13136 ns/op
+PASS
+ok      github.com/blockloop/scnr       53.995s
 ```
