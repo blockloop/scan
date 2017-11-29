@@ -9,7 +9,7 @@ import (
 
 var (
 	// ErrTooManyColumns indicates that a select query returned multiple columns and
-	// Rows attempted to bind to a slice of a primitive type. For example, trying to bind
+	// attempted to bind to a slice of a primitive type. For example, trying to bind
 	// `select col1, col2 from mytable`  to []string
 	ErrTooManyColumns = errors.New("too many columns returned for primitive slice")
 
