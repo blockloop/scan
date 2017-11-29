@@ -51,9 +51,11 @@ func Row(v interface{}, rows RowsScanner) error {
 
 	sl = sl.Elem()
 
-	if sl.Len() > 0 {
-		vVal.Set(sl.Index(0))
+	if sl.Len() == 0 {
+		return sql.ErrNoRows
 	}
+
+	vVal.Set(sl.Index(0))
 
 	return nil
 }

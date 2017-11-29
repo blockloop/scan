@@ -1,6 +1,7 @@
 package scan_test
 
 import (
+	"database/sql"
 	"errors"
 	"reflect"
 	"sync"
@@ -326,6 +327,21 @@ func TestErrorsWhenScanRowToSlice(t *testing.T) {
 
 	err := scan.Row(&persons, rs)
 	assert.EqualValues(t, scan.ErrSliceForRow, err)
+	rs.AssertExpectations(t)
+}
+
+func TestRowReturnsErrNoRowsWhenQueryHasNoRows(t *testing.T) {
+	rs := &mocks.RowsScanner{}
+	rs.On("Columns").Return([]string{"first", "last"}, nil)
+	rs.On("Close").Return(nil).Once()
+	rs.On("Next").Return(false)
+	rs.On("Err").Return(nil)
+
+	var item struct {
+		First string
+	}
+
+	assert.EqualValues(t, sql.ErrNoRows, scan.Row(&item, rs))
 	rs.AssertExpectations(t)
 }
 
