@@ -61,6 +61,8 @@ func TestRowsIgnoresUnsetableColumns(t *testing.T) {
 	rs.On("Columns").Return([]string{"first_and_last_name"}, nil)
 	rs.On("Next").Return(true).Once()
 	rs.On("Next").Return(false)
+	rs.On("Scan", mock.Anything).Return(nil)
+	rs.On("Err").Return(nil)
 
 	var item struct {
 		// private, unsetable
@@ -119,6 +121,21 @@ func TestErrorsWhenColumnsReturnsError(t *testing.T) {
 	rs.AssertExpectations(t)
 }
 
+func TestDoesNothingWhenNoColumns(t *testing.T) {
+	rs := &mocks.RowsScanner{}
+	rs.On("Columns").Return([]string{}, nil)
+	rs.On("Next").Return(true).Once()
+
+	var items []struct {
+		Name string
+		Age  int
+	}
+	err := scnr.Rows(&items, rs)
+	assert.NoError(t, err)
+	assert.Nil(t, items)
+	rs.AssertExpectations(t)
+}
+
 func TestDoesNothingWhenNextIsFalse(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Columns").Return([]string{"col_int"}, nil)
@@ -142,14 +159,12 @@ func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
 	rs.On("Next").Return(false)
 	rs.On("Err").Return(nil)
 
-	rs.On("Scan", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-		assert.Len(t, args, 2)
+	rs.On("Scan", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		reflect.ValueOf(args.Get(0)).Elem().Set(reflect.ValueOf("Brett"))
 		reflect.ValueOf(args.Get(1)).Elem().Set(reflect.ValueOf("Jones"))
 	}).Return(nil).Once()
 
-	rs.On("Scan", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-		assert.Len(t, args, 2)
+	rs.On("Scan", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		reflect.ValueOf(args.Get(0)).Elem().Set(reflect.ValueOf("Fred"))
 		reflect.ValueOf(args.Get(1)).Elem().Set(reflect.ValueOf("Jones"))
 	}).Return(nil).Once()

@@ -56,6 +56,7 @@ func Rows(v interface{}, rows RowsScanner) error {
 	if err != nil {
 		return err
 	}
+
 	isPrimitive := itemType.Kind() != reflect.Struct
 
 	for rows.Next() {
@@ -103,6 +104,11 @@ func structPointers(stct reflect.Value, cols []string) []interface{} {
 	for _, colName := range cols {
 		fieldVal := fieldByName(stct, colName)
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
+			// have to add if we found a column because Scan() requires
+			// len(cols) arguments or it will error. This way we can scan to
+			// nowhere
+			nothing := reflect.New(reflect.TypeOf("")).Elem().Addr().Interface()
+			pointers = append(pointers, nothing)
 			continue
 		}
 
