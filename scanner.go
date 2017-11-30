@@ -131,8 +131,7 @@ func Columns(v interface{}) []string {
 
 		switch f.Type.Kind() {
 		case reflect.Invalid, reflect.Complex64, reflect.Complex128, reflect.Chan,
-			reflect.Func, reflect.Map, reflect.Slice, reflect.Struct,
-			reflect.UnsafePointer:
+			reflect.Func, reflect.Map, reflect.Slice, reflect.UnsafePointer:
 			continue
 		}
 
@@ -168,8 +167,7 @@ func Values(v interface{}) []interface{} {
 
 		switch f.Type.Kind() {
 		case reflect.Invalid, reflect.Complex64, reflect.Complex128, reflect.Chan,
-			reflect.Func, reflect.Map, reflect.Slice, reflect.Struct,
-			reflect.UnsafePointer:
+			reflect.Func, reflect.Map, reflect.Slice, reflect.UnsafePointer:
 			continue
 		}
 

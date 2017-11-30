@@ -283,6 +283,39 @@ func TestValuesInsertsAllColumns(t *testing.T) {
 	assert.EqualValues(t, 1, id)
 }
 
+func TestValuesInsertsTimeColumns(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	schema := `CREATE TABLE IF NOT EXISTS persons (
+		name VARCHAR(120) NOT NULL,
+		created DATETIME NOT NULL
+	);`
+
+	db := makeDBSchema(t, schema)
+
+	type Person struct {
+		Name    string
+		Created time.Time
+	}
+
+	person := &Person{
+		Name:    "Noah",
+		Created: time.Now(),
+	}
+
+	vals := scan.Values(person)
+
+	res, err := db.Exec(`INSERT INTO persons (name, created) VALUES(?, ?)`, vals...)
+	require.NoError(t, err)
+
+	id, err := res.LastInsertId()
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 1, id)
+}
+
 func TestScanRowsScansAllColumnTypes(t *testing.T) {
 	if testing.Short() {
 		t.Skip()

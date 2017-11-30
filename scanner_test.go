@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/blockloop/scan"
 	"github.com/blockloop/scan/mocks"
@@ -388,14 +389,9 @@ func TestColumnsSkipsComplexTypeFields(t *testing.T) {
 		FirstName string
 		Age       int
 		Active    bool
-		Address   struct {
-			Line1 string
-			City  string
-			State string
-		}
-		One   map[string]interface{}
-		Two   []string
-		Three chan bool
+		One       map[string]interface{}
+		Two       []string
+		Three     chan bool
 	}
 
 	cols := scan.Columns(&person)
@@ -419,6 +415,14 @@ func TestColumnsPanicsWhenNotAStruct(t *testing.T) {
 	})
 }
 
+func TestColumnsWorksWithTime(t *testing.T) {
+	var person struct {
+		Created time.Time
+	}
+
+	assert.EqualValues(t, []string{"Created"}, scan.Columns(person))
+}
+
 func TestValuesGetsAllFieldValues(t *testing.T) {
 	type person struct {
 		Name string
@@ -439,14 +443,9 @@ func TestValuesSkipsComplexTypes(t *testing.T) {
 		FirstName string
 		Age       int
 		Active    bool
-		Address   struct {
-			Line1 string
-			City  string
-			State string
-		}
-		One   map[string]interface{}
-		Two   []string
-		Three chan bool
+		One       map[string]interface{}
+		Two       []string
+		Three     chan bool
 	}
 
 	p := &person{
@@ -502,6 +501,19 @@ func TestValuesPanicsWhenNotAStruct(t *testing.T) {
 	assert.Panics(t, func() {
 		scan.Values("brett")
 	})
+}
+
+func TestValuesWorksWithTime(t *testing.T) {
+	now := time.Now()
+
+	type person struct {
+		Created time.Time
+	}
+	p := person{
+		Created: now,
+	}
+
+	assert.EqualValues(t, []interface{}{now}, scan.Values(p))
 }
 
 type simpleQueue struct {
