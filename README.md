@@ -69,8 +69,9 @@ pass the resulting `row` to `scan` for simple scanning
 
 ## Benchmarks
 
-I created some benchmarks in [scanner_bench_test.go](scanner_bench_test.go) to compare using `scan` against
-manually scanning directly to structs and/or appending to slices
+I created some benchmarks in [bench_scanner_test.go](bench_scanner_test.go) to compare using `scan`
+against manually scanning directly to structs and/or appending to slices. The results aren't staggering
+as you can see. Roughly 850ns for one field structs and 4.6μs for five field structs.
 
 ```
 → go test -bench=. -benchtime=5s ./
