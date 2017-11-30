@@ -81,7 +81,7 @@ BenchmarkScanRowOneField-8               1000000              9956 ns/op
 BenchmarkDirectScanOneField-8            1000000              9111 ns/op
 BenchmarkScanRowFiveFields-8              500000             21125 ns/op
 BenchmarkDirectScanFiveFields-8           500000             16446 ns/op
-BenchmarkScanRowsOneField-8              500000             17365 ns/op
+BenchmarkScanRowsOneField-8               500000             17365 ns/op
 BenchmarkDirectScanManyOneField-8         500000             13136 ns/op
 PASS
 ok      github.com/blockloop/scan       53.995s
