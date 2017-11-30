@@ -52,9 +52,9 @@ fmt.Printf("%#v", person)
 ### Scalar value
 
 ```go
-row := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
+rows, err := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
 var age int8
-err := scan.Scalar(&age, row)
+err := scan.Row(&age, row)
 
 fmt.Printf("%d", age)
 // 100

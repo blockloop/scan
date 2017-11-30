@@ -52,6 +52,25 @@ func ExampleRow() {
 	// {"ID":1,"Name":"brett"}
 }
 
+func ExampleRow_scalar() {
+	db := openDB()
+	rows, err := db.Query("SELECT name FROM persons LIMIT 1")
+	if err != nil {
+		panic(err)
+	}
+
+	var name string
+
+	err = scan.Row(&name, rows)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%q", name)
+	// Output:
+	// "brett"
+}
+
 func ExampleRows() {
 	db := openDB()
 	rows, err := db.Query("SELECT * FROM persons ORDER BY name")
@@ -74,7 +93,7 @@ func ExampleRows() {
 	// [{"ID":1,"Name":"brett"},{"ID":2,"Name":"fred"}]
 }
 
-func ExampleRows_two() {
+func ExampleRows_primitive() {
 	db := openDB()
 	rows, err := db.Query("SELECT name FROM persons ORDER BY name")
 	if err != nil {
@@ -90,20 +109,4 @@ func ExampleRows_two() {
 	json.NewEncoder(os.Stdout).Encode(&names)
 	// Output:
 	// ["brett","fred"]
-}
-
-func ExampleScalar() {
-	db := openDB()
-	row := db.QueryRow("SELECT id FROM persons WHERE name = ?", "brett")
-
-	var id int
-
-	err := scan.Scalar(&id, row)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("ID: %d", id)
-	// Output:
-	// ID: 1
 }

@@ -5,7 +5,6 @@ package scan
 import (
 	"database/sql"
 	"errors"
-	"io"
 	"reflect"
 	"strings"
 )
@@ -29,17 +28,6 @@ var (
 	// on the struct
 	nothing = reflect.New(reflect.TypeOf([]byte{})).Elem().Addr().Interface()
 )
-
-// Scalar is a wrapper for (sql.DB).Scan(value). It is here to provide consistency
-// for users and offeres nothing more
-func Scalar(v interface{}, scanner Scanner) error {
-	if closer, ok := scanner.(io.Closer); ok {
-		if AutoClose {
-			defer closer.Close()
-		}
-	}
-	return scanner.Scan(v)
-}
 
 // Row scans a single row into a single variable
 func Row(v interface{}, rows RowsScanner) error {

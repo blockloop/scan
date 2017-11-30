@@ -230,30 +230,20 @@ func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
 	rs.AssertExpectations(t)
 }
 
-func TestScalarScansOneColumnOneRow(t *testing.T) {
+func TestRowScansToPrimativeType(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Close").Return(nil)
+	rs.On("Next").Return(true).Once()
+	rs.On("Next").Return(false)
+	rs.On("Columns").Return([]string{"doesn't matter"}, nil)
 	rs.On("Scan", mock.Anything).Run(func(args mock.Arguments) {
 		assert.Len(t, args, 1)
 	}).Return(nil).Once()
+	rs.On("Err").Return(nil)
 
 	var name string
-	assert.NoError(t, scan.Scalar(&name, rs))
+	assert.NoError(t, scan.Row(&name, rs))
 
-	rs.AssertExpectations(t)
-}
-
-func TestScalarReturnsErrorWhenScanErrors(t *testing.T) {
-	rs := &mocks.RowsScanner{}
-
-	var name string
-	rs.On("Close").Return(nil)
-	rs.On("Scan", mock.Anything).Run(func(mock.Arguments) {
-		name = "brett"
-	}).Return(nil)
-
-	scan.Scalar(&name, rs)
-	assert.EqualValues(t, "brett", name)
 	rs.AssertExpectations(t)
 }
 
@@ -344,18 +334,6 @@ func TestRowReturnsErrNoRowsWhenQueryHasNoRows(t *testing.T) {
 	}
 
 	assert.EqualValues(t, sql.ErrNoRows, scan.Row(&item, rs))
-	rs.AssertExpectations(t)
-}
-
-func TestScalarClosesIfCloserWasSuppliedAndAutoCloseIsTrue(t *testing.T) {
-	rs := &mocks.RowsScanner{}
-	rs.On("Close").Return(nil)
-
-	rs.On("Scan", mock.Anything).Return(nil).Once()
-
-	var name string
-	assert.NoError(t, scan.Scalar(&name, rs))
-
 	rs.AssertExpectations(t)
 }
 
