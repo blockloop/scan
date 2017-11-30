@@ -1,8 +1,9 @@
 # scan 
 
-[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat-square)](https://godoc.org/github.com/blockloop/scan)
-[![Travis](https://img.shields.io/travis/blockloop/scan.svg?style=flat-square)](https://travis-ci.org/blockloop/scan)
-[![Coveralls github](https://img.shields.io/coveralls/github/blockloop/scan.svg?style=flat-square)](https://coveralls.io/github/blockloop/scan)
+[![GoDoc](https://godoc.org/github.com/blockloop/scan?status.svg)](https://godoc.org/github.com/blockloop/scan)
+[![Travis](https://img.shields.io/travis/blockloop/scan.svg)](https://travis-ci.org/blockloop/scan)
+[![Coveralls github](https://img.shields.io/coveralls/github/blockloop/scan.svg)](https://coveralls.io/github/blockloop/scan)
+[![Report Card](https://goreportcard.com/badge/github.com/blockloop/scan)](https://goreportcard.com/report/github.com/blockloop/scan)
 
 scan provides the ability to use database/sql/rows to scan datasets directly to structs or slices. 
 For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org/github.com/blockloop/scan)
