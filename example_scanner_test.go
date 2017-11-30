@@ -110,3 +110,32 @@ func ExampleRows_primitive() {
 	// Output:
 	// ["brett","fred"]
 }
+
+func ExampleColumns() {
+	var person struct {
+		Name string
+		Age  int
+	}
+
+	cols := scan.Columns(&person)
+	fmt.Printf("%#v", cols)
+	// Output:
+	// []string{"Name", "Age"}
+}
+
+func ExampleValues() {
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	p := &Person{
+		Name: "Noah",
+		Age:  950,
+	}
+
+	vals := scan.Values(p)
+	fmt.Printf("%#v", vals)
+	// Output:
+	// []interface {}{"Noah", 950}
+}

@@ -350,6 +350,160 @@ func TestRowPanicsWhenItemIsNotAPointer(t *testing.T) {
 	rs.AssertExpectations(t)
 }
 
+func TestColumnsListsAllFields(t *testing.T) {
+	var person struct {
+		FirstName string
+		Age       int
+		Active    bool
+	}
+
+	cols := scan.Columns(&person)
+	assert.EqualValues(t, []string{"FirstName", "Age", "Active"}, cols)
+}
+
+func TestColumnsPrefersDBTag(t *testing.T) {
+	var person struct {
+		FirstName string `db:"first_name"`
+		Age       int
+		Active    bool
+	}
+
+	cols := scan.Columns(&person)
+	assert.EqualValues(t, []string{"first_name", "Age", "Active"}, cols)
+}
+
+func TestColumnsSkipsDashDBTag(t *testing.T) {
+	var person struct {
+		FirstName string `db:"-"`
+		Age       int
+		Active    bool
+	}
+
+	cols := scan.Columns(&person)
+	assert.EqualValues(t, []string{"Age", "Active"}, cols)
+}
+
+func TestColumnsSkipsComplexTypeFields(t *testing.T) {
+	var person struct {
+		FirstName string
+		Age       int
+		Active    bool
+		Address   struct {
+			Line1 string
+			City  string
+			State string
+		}
+		One   map[string]interface{}
+		Two   []string
+		Three chan bool
+	}
+
+	cols := scan.Columns(&person)
+	assert.EqualValues(t, []string{"FirstName", "Age", "Active"}, cols)
+}
+
+func TestColumnsUsesValueWhenNotAPointer(t *testing.T) {
+	var person struct {
+		FirstName *string
+	}
+
+	cols := scan.Columns(person)
+	assert.EqualValues(t, []string{"FirstName"}, cols)
+}
+
+func TestColumnsPanicsWhenNotAStruct(t *testing.T) {
+	var a string
+
+	assert.Panics(t, func() {
+		scan.Columns(a)
+	})
+}
+
+func TestValuesGetsAllFieldValues(t *testing.T) {
+	type person struct {
+		Name string
+		Age  int
+	}
+
+	p := &person{
+		Name: "brett",
+		Age:  100,
+	}
+
+	vals := scan.Values(p)
+	assert.EqualValues(t, []interface{}{"brett", 100}, vals)
+}
+
+func TestValuesSkipsComplexTypes(t *testing.T) {
+	type person struct {
+		FirstName string
+		Age       int
+		Active    bool
+		Address   struct {
+			Line1 string
+			City  string
+			State string
+		}
+		One   map[string]interface{}
+		Two   []string
+		Three chan bool
+	}
+
+	p := &person{
+		FirstName: "brett",
+		Age:       100,
+		Active:    false,
+		One:       map[string]interface{}{"Hello": "world"},
+		Two:       []string{"abcd"},
+		Three:     make(chan bool, 0),
+	}
+
+	vals := scan.Values(p)
+	assert.EqualValues(t, []interface{}{"brett", 100, false}, vals)
+}
+
+func TestValuesSkipsDashDBTag(t *testing.T) {
+	type person struct {
+		FirstName string `db:"-"`
+		Age       int
+		Active    bool
+	}
+	p := &person{
+		FirstName: "brett",
+		Age:       100,
+		Active:    true,
+	}
+
+	vals := scan.Values(p)
+	assert.EqualValues(t, []interface{}{100, true}, vals)
+}
+
+func TestValuesUsesNilForEmptyValues(t *testing.T) {
+	type person struct {
+		FirstName *string
+	}
+	p := &person{}
+
+	vals := scan.Values(p)
+	assert.EqualValues(t, []interface{}{(*string)(nil)}, vals)
+}
+
+func TestValuesWorksWhenNotAPointer(t *testing.T) {
+	type person struct {
+		FirstName string
+	}
+	p := person{FirstName: "brett"}
+
+	vals := scan.Values(p)
+	assert.EqualValues(t, []interface{}{"brett"}, vals)
+}
+
+func TestValuesPanicsWhenNotAStruct(t *testing.T) {
+	assert.Panics(t, func() {
+		scan.Values("brett")
+	})
+}
+
 type simpleQueue struct {
 	items []interface{}
 	m     *sync.Mutex

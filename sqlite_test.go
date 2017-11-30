@@ -2,6 +2,7 @@ package scan_test
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestScanOneScansSingleItem(t *testing.T) {
 
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100)
@@ -59,7 +60,7 @@ func TestScanOneScansSingleItemWithTags(t *testing.T) {
 
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100)
@@ -85,7 +86,7 @@ func TestScanOneScansMultipleItems(t *testing.T) {
 
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100)
@@ -114,7 +115,7 @@ func TestScanOneScansMultipleItemsWithTags(t *testing.T) {
 
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
@@ -138,7 +139,7 @@ func TestScanOneScansPrimitiveTypesStrings(t *testing.T) {
 	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
@@ -158,7 +159,7 @@ func TestScanOneScansPrimitiveTypesInts(t *testing.T) {
 	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
@@ -178,7 +179,7 @@ func TestScanOneScansPrimitiveTypesInterface(t *testing.T) {
 	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
@@ -199,7 +200,7 @@ func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 	}
 	schema := `CREATE TABLE IF NOT EXISTS persons (
 		name VARCHAR(120),
-		age TINYINT
+		age INT
 	);
 
 	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
@@ -219,6 +220,67 @@ func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 		{Name: "brett"},
 		{Name: "jones"},
 	}, items)
+}
+
+func TestColumnsSelectsAllColumns(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	schema := `CREATE TABLE IF NOT EXISTS persons (
+		name VARCHAR(120),
+		age INT
+	);
+
+	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
+	`
+	db := makeDBSchema(t, schema)
+
+	var person struct {
+		Name string
+		Age  int
+	}
+
+	cols := strings.Join(scan.Columns(&person), ", ")
+
+	rows, err := db.Query(`SELECT ` + cols + ` FROM persons ORDER BY name ASC`)
+	require.NoError(t, err)
+	require.NoError(t, scan.Row(&person, rows))
+	assert.EqualValues(t, "brett", person.Name)
+	assert.EqualValues(t, 100, person.Age)
+}
+
+func TestValuesInsertsAllColumns(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	schema := `CREATE TABLE IF NOT EXISTS persons (
+		name VARCHAR(120),
+		age INT
+	);`
+
+	db := makeDBSchema(t, schema)
+
+	type Person struct {
+		Name string
+		Age  int
+	}
+
+	person := &Person{
+		Name: "Noah",
+		Age:  950,
+	}
+
+	vals := scan.Values(person)
+
+	res, err := db.Exec(`INSERT INTO persons (name, age) VALUES(?, ?)`, vals...)
+	require.NoError(t, err)
+
+	id, err := res.LastInsertId()
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 1, id)
 }
 
 func TestScanRowsScansAllColumnTypes(t *testing.T) {
@@ -263,7 +325,7 @@ func TestScanRowsScansAllColumnTypes(t *testing.T) {
 }
 
 var allTypesSchema = `
-CREATE TABLE IF NOT EXISTS all_types ( col_int INT, col_integer INTEGER, col_tinyint TINYINT, col_smallint SMALLINT, col_mediumint MEDIUMINT, col_bigint BIGINT, col_unsigned UNSIGNED BIG INT, col_int2 INT2, col_int8 INT8, col_character CHARACTER(20), col_varchar VARCHAR(255), col_varying VARYING CHARACTER(255), col_nchar NCHAR(55), col_native NATIVE CHARACTER(70), col_nvarchar NVARCHAR(100), col_text TEXT, col_clob CLOB, col_blob BLOB, col_real REAL, col_double DOUBLE, col_float FLOAT, col_numeric NUMERIC, col_decimal DECIMAL(10,5), col_boolean BOOLEAN, col_date DATE, col_datetime DATETIME);
+CREATE TABLE IF NOT EXISTS all_types ( col_int INT, col_integer INTEGER, col_tinyint INT, col_smallint SMALLINT, col_mediumint MEDIUMINT, col_bigint BIGINT, col_unsigned UNSIGNED BIG INT, col_int2 INT2, col_int8 INT8, col_character CHARACTER(20), col_varchar VARCHAR(255), col_varying VARYING CHARACTER(255), col_nchar NCHAR(55), col_native NATIVE CHARACTER(70), col_nvarchar NVARCHAR(100), col_text TEXT, col_clob CLOB, col_blob BLOB, col_real REAL, col_double DOUBLE, col_float FLOAT, col_numeric NUMERIC, col_decimal DECIMAL(10,5), col_boolean BOOLEAN, col_date DATE, col_datetime DATETIME);
 INSERT INTO all_types ( col_int, col_integer, col_tinyint, col_smallint, col_mediumint, col_bigint, col_unsigned, col_int2, col_int8, col_character, col_varchar, col_varying, col_nchar, col_native, col_nvarchar, col_text, col_clob, col_blob, col_real, col_double, col_float, col_numeric, col_decimal, col_boolean, col_date, col_datetime)
 VALUES ( 2147483640, 2147483641, 126, 127, 2147483642, 9223372036854775800, 9223372036854775801, 2147483643, 127, 'a', 'ab', 'abc', 'abcd', 'abcde', 'abcdef', 'abcdefgh', 'abcdefghi', 'abcdefghij', '3.1', 3.14, 3.141, 3141, 3.1415, 1, '2017-11-27', '2017-11-27 17:59:48');
 `

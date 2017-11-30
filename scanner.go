@@ -66,11 +66,11 @@ func Rows(v interface{}, rows RowsScanner) error {
 	}
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
-		panic(k.String() + ": must be a pointer to a slice")
+		panic(k.String() + ": must be a pointer")
 	}
 	sliceType := vType.Elem()
 	if reflect.Slice != sliceType.Kind() {
-		panic(sliceType.String() + ": must be a pointer to a slice")
+		panic(sliceType.String() + ": must be a slice")
 	}
 
 	sliceVal := reflect.Indirect(reflect.ValueOf(v))
@@ -107,6 +107,78 @@ func Rows(v interface{}, rows RowsScanner) error {
 		sliceVal.Set(reflect.Append(sliceVal, sliceItem))
 	}
 	return rows.Err()
+}
+
+// Columns creates a list of columns that should be selected from a database query and
+// all fields that are primitive types that are not flagged with a struct tag db:"-"
+// should be used
+func Columns(v interface{}) []string {
+	vType := reflect.TypeOf(v)
+	if k := vType.Kind(); k == reflect.Ptr {
+		vType = vType.Elem()
+	}
+
+	vVal := reflect.Indirect(reflect.ValueOf(v))
+	if k := vType.Kind(); k != reflect.Struct {
+		panic(k.String() + " must be a struct")
+	}
+
+	numField := vVal.NumField()
+	fields := make([]string, 0, numField)
+
+	for i := 0; i < numField; i++ {
+		f := vType.Field(i)
+
+		switch f.Type.Kind() {
+		case reflect.Invalid, reflect.Complex64, reflect.Complex128, reflect.Chan,
+			reflect.Func, reflect.Map, reflect.Slice, reflect.Struct,
+			reflect.UnsafePointer:
+			continue
+		}
+
+		if dbTag, ok := f.Tag.Lookup("db"); ok {
+			if dbTag != "-" {
+				fields = append(fields, dbTag)
+			}
+			continue
+		}
+		fields = append(fields, f.Name)
+	}
+	return fields
+}
+
+// Values creates a list of values to be used for inserting into a database. all fields
+// that are primitive types that are not flagged with a struct tag db:"-" should be used
+func Values(v interface{}) []interface{} {
+	vType := reflect.TypeOf(v)
+	if k := vType.Kind(); k == reflect.Ptr {
+		vType = vType.Elem()
+	}
+
+	vVal := reflect.Indirect(reflect.ValueOf(v))
+	if k := vType.Kind(); k != reflect.Struct {
+		panic(k.String() + " must be a struct")
+	}
+
+	numField := vVal.NumField()
+	fields := make([]interface{}, 0, numField)
+
+	for i := 0; i < numField; i++ {
+		f := vType.Field(i)
+
+		switch f.Type.Kind() {
+		case reflect.Invalid, reflect.Complex64, reflect.Complex128, reflect.Chan,
+			reflect.Func, reflect.Map, reflect.Slice, reflect.Struct,
+			reflect.UnsafePointer:
+			continue
+		}
+
+		if dbTag, _ := f.Tag.Lookup("db"); dbTag == "-" {
+			continue
+		}
+		fields = append(fields, vVal.Field(i).Interface())
+	}
+	return fields
 }
 
 // fieldByName gets a struct's field by first looking up the db struct tag and falling
