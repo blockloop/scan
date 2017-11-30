@@ -23,7 +23,7 @@ fmt.Printf("%#v", persons)
 //    {ID: 3, Name: "stacy"},
 // }
 ```
-### Multiple rows of primative type
+### Multiple rows of primitive type
 
 ```go
 rows, err := db.Query("SELECT name FROM persons")

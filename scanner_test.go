@@ -231,7 +231,7 @@ func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
 	rs.AssertExpectations(t)
 }
 
-func TestRowScansToPrimativeType(t *testing.T) {
+func TestRowScansToPrimitiveType(t *testing.T) {
 	rs := &mocks.RowsScanner{}
 	rs.On("Close").Return(nil)
 	rs.On("Next").Return(true).Once()
