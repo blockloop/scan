@@ -32,7 +32,7 @@ func openDB() *sql.DB {
 
 func ExampleRow() {
 	db := openDB()
-	rows, err := db.Query("SELECT * FROM persons")
+	rows, err := db.Query("SELECT * FROM persons LIMIT 1")
 	if err != nil {
 		panic(err)
 	}
