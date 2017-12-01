@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/blockloop/scan"
 	"github.com/blockloop/scan/mocks"
@@ -268,10 +267,10 @@ func TestReturnsScannerError(t *testing.T) {
 
 func TestScansPrimitiveSlices(t *testing.T) {
 	table := [][]interface{}{
-		[]interface{}{1, 2, 3},
-		[]interface{}{"brett", "fred", "geoff"},
-		[]interface{}{true, false, true},
-		[]interface{}{1.0, 1.1, 1.2},
+		{1, 2, 3},
+		{"brett", "fred", "geoff"},
+		{true, false, true},
+		{1.0, 1.1, 1.2},
 	}
 
 	for _, items := range table {
@@ -349,171 +348,6 @@ func TestRowPanicsWhenItemIsNotAPointer(t *testing.T) {
 		scan.Row(item, rs)
 	})
 	rs.AssertExpectations(t)
-}
-
-func TestColumnsListsAllFields(t *testing.T) {
-	var person struct {
-		FirstName string
-		Age       int
-		Active    bool
-	}
-
-	cols := scan.Columns(&person)
-	assert.EqualValues(t, []string{"FirstName", "Age", "Active"}, cols)
-}
-
-func TestColumnsPrefersDBTag(t *testing.T) {
-	var person struct {
-		FirstName string `db:"first_name"`
-		Age       int
-		Active    bool
-	}
-
-	cols := scan.Columns(&person)
-	assert.EqualValues(t, []string{"first_name", "Age", "Active"}, cols)
-}
-
-func TestColumnsSkipsDashDBTag(t *testing.T) {
-	var person struct {
-		FirstName string `db:"-"`
-		Age       int
-		Active    bool
-	}
-
-	cols := scan.Columns(&person)
-	assert.EqualValues(t, []string{"Age", "Active"}, cols)
-}
-
-func TestColumnsSkipsComplexTypeFields(t *testing.T) {
-	var person struct {
-		FirstName string
-		Age       int
-		Active    bool
-		One       map[string]interface{}
-		Two       []string
-		Three     chan bool
-	}
-
-	cols := scan.Columns(&person)
-	assert.EqualValues(t, []string{"FirstName", "Age", "Active"}, cols)
-}
-
-func TestColumnsUsesValueWhenNotAPointer(t *testing.T) {
-	var person struct {
-		FirstName *string
-	}
-
-	cols := scan.Columns(person)
-	assert.EqualValues(t, []string{"FirstName"}, cols)
-}
-
-func TestColumnsPanicsWhenNotAStruct(t *testing.T) {
-	var a string
-
-	assert.Panics(t, func() {
-		scan.Columns(a)
-	})
-}
-
-func TestColumnsWorksWithTime(t *testing.T) {
-	var person struct {
-		Created time.Time
-	}
-
-	assert.EqualValues(t, []string{"Created"}, scan.Columns(person))
-}
-
-func TestValuesGetsAllFieldValues(t *testing.T) {
-	type person struct {
-		Name string
-		Age  int
-	}
-
-	p := &person{
-		Name: "brett",
-		Age:  100,
-	}
-
-	vals := scan.Values(p)
-	assert.EqualValues(t, []interface{}{"brett", 100}, vals)
-}
-
-func TestValuesSkipsComplexTypes(t *testing.T) {
-	type person struct {
-		FirstName string
-		Age       int
-		Active    bool
-		One       map[string]interface{}
-		Two       []string
-		Three     chan bool
-	}
-
-	p := &person{
-		FirstName: "brett",
-		Age:       100,
-		Active:    false,
-		One:       map[string]interface{}{"Hello": "world"},
-		Two:       []string{"abcd"},
-		Three:     make(chan bool, 0),
-	}
-
-	vals := scan.Values(p)
-	assert.EqualValues(t, []interface{}{"brett", 100, false}, vals)
-}
-
-func TestValuesSkipsDashDBTag(t *testing.T) {
-	type person struct {
-		FirstName string `db:"-"`
-		Age       int
-		Active    bool
-	}
-	p := &person{
-		FirstName: "brett",
-		Age:       100,
-		Active:    true,
-	}
-
-	vals := scan.Values(p)
-	assert.EqualValues(t, []interface{}{100, true}, vals)
-}
-
-func TestValuesUsesNilForEmptyValues(t *testing.T) {
-	type person struct {
-		FirstName *string
-	}
-	p := &person{}
-
-	vals := scan.Values(p)
-	assert.EqualValues(t, []interface{}{(*string)(nil)}, vals)
-}
-
-func TestValuesWorksWhenNotAPointer(t *testing.T) {
-	type person struct {
-		FirstName string
-	}
-	p := person{FirstName: "brett"}
-
-	vals := scan.Values(p)
-	assert.EqualValues(t, []interface{}{"brett"}, vals)
-}
-
-func TestValuesPanicsWhenNotAStruct(t *testing.T) {
-	assert.Panics(t, func() {
-		scan.Values("brett")
-	})
-}
-
-func TestValuesWorksWithTime(t *testing.T) {
-	now := time.Now()
-
-	type person struct {
-		Created time.Time
-	}
-	p := person{
-		Created: now,
-	}
-
-	assert.EqualValues(t, []interface{}{now}, scan.Values(p))
 }
 
 type simpleQueue struct {

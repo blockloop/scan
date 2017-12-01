@@ -2,7 +2,6 @@ package scan_test
 
 import (
 	"database/sql"
-	"strings"
 	"testing"
 	"time"
 
@@ -220,100 +219,6 @@ func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 		{Name: "brett"},
 		{Name: "jones"},
 	}, items)
-}
-
-func TestColumnsSelectsAllColumns(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
-
-	schema := `CREATE TABLE IF NOT EXISTS persons (
-		name VARCHAR(120),
-		age INT
-	);
-
-	INSERT INTO PERSONS (name, age) VALUES ('brett', 100), ('jones', 100);
-	`
-	db := makeDBSchema(t, schema)
-
-	var person struct {
-		Name string
-		Age  int
-	}
-
-	cols := strings.Join(scan.Columns(&person), ", ")
-
-	rows, err := db.Query(`SELECT ` + cols + ` FROM persons ORDER BY name ASC`)
-	require.NoError(t, err)
-	require.NoError(t, scan.Row(&person, rows))
-	assert.EqualValues(t, "brett", person.Name)
-	assert.EqualValues(t, 100, person.Age)
-}
-
-func TestValuesInsertsAllColumns(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
-
-	schema := `CREATE TABLE IF NOT EXISTS persons (
-		name VARCHAR(120),
-		age INT
-	);`
-
-	db := makeDBSchema(t, schema)
-
-	type Person struct {
-		Name string
-		Age  int
-	}
-
-	person := &Person{
-		Name: "Noah",
-		Age:  950,
-	}
-
-	vals := scan.Values(person)
-
-	res, err := db.Exec(`INSERT INTO persons (name, age) VALUES(?, ?)`, vals...)
-	require.NoError(t, err)
-
-	id, err := res.LastInsertId()
-	require.NoError(t, err)
-
-	assert.EqualValues(t, 1, id)
-}
-
-func TestValuesInsertsTimeColumns(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
-
-	schema := `CREATE TABLE IF NOT EXISTS persons (
-		name VARCHAR(120) NOT NULL,
-		created DATETIME NOT NULL
-	);`
-
-	db := makeDBSchema(t, schema)
-
-	type Person struct {
-		Name    string
-		Created time.Time
-	}
-
-	person := &Person{
-		Name:    "Noah",
-		Created: time.Now(),
-	}
-
-	vals := scan.Values(person)
-
-	res, err := db.Exec(`INSERT INTO persons (name, created) VALUES(?, ?)`, vals...)
-	require.NoError(t, err)
-
-	id, err := res.LastInsertId()
-	require.NoError(t, err)
-
-	assert.EqualValues(t, 1, id)
 }
 
 func TestScanRowsScansAllColumnTypes(t *testing.T) {
