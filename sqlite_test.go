@@ -24,7 +24,7 @@ func makeDBSchema(t *testing.T, schema string) *sql.DB {
 	return db
 }
 
-func TestScanOneScansSingleItem(t *testing.T) {
+func TestSqliteScanOneScansSingleItem(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -50,7 +50,7 @@ func TestScanOneScansSingleItem(t *testing.T) {
 	assert.EqualValues(t, 100, item.Age)
 }
 
-func TestScanOneScansSingleItemWithTags(t *testing.T) {
+func TestSqliteScanOneScansSingleItemWithTags(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -76,7 +76,7 @@ func TestScanOneScansSingleItemWithTags(t *testing.T) {
 	assert.EqualValues(t, 100, item.MyAge)
 }
 
-func TestScanOneScansMultipleItems(t *testing.T) {
+func TestSqliteScanOneScansMultipleItems(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -105,7 +105,7 @@ func TestScanOneScansMultipleItems(t *testing.T) {
 	assert.EqualValues(t, 100, items[1].Age)
 }
 
-func TestScanOneScansMultipleItemsWithTags(t *testing.T) {
+func TestSqliteScanOneScansMultipleItemsWithTags(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -134,7 +134,7 @@ func TestScanOneScansMultipleItemsWithTags(t *testing.T) {
 	assert.EqualValues(t, 100, items[1].MyAge)
 }
 
-func TestScanOneScansPrimitiveTypesStrings(t *testing.T) {
+func TestSqliteScanOneScansPrimitiveTypesStrings(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -154,7 +154,7 @@ func TestScanOneScansPrimitiveTypesStrings(t *testing.T) {
 	assert.EqualValues(t, []string{"brett", "jones"}, items)
 }
 
-func TestScanOneScansPrimitiveTypesInts(t *testing.T) {
+func TestSqliteScanOneScansPrimitiveTypesInts(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -174,7 +174,7 @@ func TestScanOneScansPrimitiveTypesInts(t *testing.T) {
 	assert.EqualValues(t, []int{100, 100}, items)
 }
 
-func TestScanOneScansPrimitiveTypesInterface(t *testing.T) {
+func TestSqliteScanOneScansPrimitiveTypesInterface(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -195,7 +195,7 @@ func TestScanOneScansPrimitiveTypesInterface(t *testing.T) {
 	assert.Equal(t, []interface{}{int64(100), int64(100)}, items)
 }
 
-func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
+func TestSqliteScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -223,7 +223,7 @@ func TestScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 	}, items)
 }
 
-func TestScanRowsScansAllColumnTypes(t *testing.T) {
+func TestSqliteScanRowsScansAllColumnTypes(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
