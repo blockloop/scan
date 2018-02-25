@@ -98,3 +98,13 @@ func TestColumnsStrictExcludesUntaggedFields(t *testing.T) {
 	cols := ColumnsStrict(&person{})
 	assert.EqualValues(t, []string{"name"}, cols)
 }
+
+func TestColumnsIgnoresDashTag(t *testing.T) {
+	type person struct {
+		Name string `db:"name"`
+		Age  int    `db:"-"`
+	}
+
+	cols := ColumnsStrict(&person{})
+	assert.EqualValues(t, []string{"name"}, cols)
+}

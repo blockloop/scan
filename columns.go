@@ -43,7 +43,7 @@ func columns(v interface{}, strict bool, excluded ...string) []string {
 
 		typeField := vVal.Type().Field(i)
 		if tag, ok := typeField.Tag.Lookup(dbTag); ok {
-			if !isExcluded(tag) {
+			if tag != "-" && !isExcluded(tag) {
 				names = append(names, tag)
 			}
 			continue
