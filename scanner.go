@@ -1,5 +1,3 @@
-// Package scan provides functionality for scanning database/sql rows into slices,
-// structs, and primitive types dynamically
 package scan
 
 import (
@@ -29,7 +27,22 @@ var (
 	nothing = reflect.New(reflect.TypeOf([]byte{})).Elem().Addr().Interface()
 )
 
-// Row scans a single row into a single variable
+// RowsScanner is a database scanner for many rows. It is most commonly the
+// result of *sql.DB Query(...)
+type RowsScanner interface {
+	Close() error
+	Scan(dest ...interface{}) error
+	Columns() ([]string, error)
+	ColumnTypes() ([]*sql.ColumnType, error)
+	Err() error
+	Next() bool
+}
+
+// Row scans a single row into a single variable. It requires that you use
+// db.Query and not db.QueryRow, because QueryRow does not return column names.
+// There is no performance impact in using one over the other. QueryRow only
+// defers returning err until Scan is called, which is an unnecessary
+// optimization for this library.
 func Row(v interface{}, rows RowsScanner) error {
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
@@ -138,22 +151,4 @@ func structPointers(stct reflect.Value, cols []string) []interface{} {
 		pointers = append(pointers, fieldVal.Addr().Interface())
 	}
 	return pointers
-}
-
-// RowsScanner is a database scanner for many rows. It is most commonly the result of
-// *(database/sql).DB.Query(...) but can be mocked or stubbed
-type RowsScanner interface {
-	Close() error
-	Scan(dest ...interface{}) error
-	Columns() ([]string, error)
-	ColumnTypes() ([]*sql.ColumnType, error)
-	Err() error
-	Next() bool
-	NextResultSet() bool
-}
-
-// Scanner is a single row scanner. It is most commonly the result of
-// *(database/sql).DB.QueryRow(...) but can be mocked or stubbed
-type Scanner interface {
-	Scan(dest ...interface{}) error
 }
