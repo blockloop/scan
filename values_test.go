@@ -1,10 +1,9 @@
-package scan_test
+package scan
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/blockloop/scan"
 	. "github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +14,7 @@ func TestValuesScansOnlyCols(t *testing.T) {
 	}
 
 	p := &person{Name: "Brett"}
-	vals := scan.Values([]string{"Name"}, p)
+	vals := Values([]string{"Name"}, p)
 
 	EqualValues(t, []interface{}{"Brett"}, vals)
 }
@@ -26,7 +25,7 @@ func TestValuesScansDBTags(t *testing.T) {
 	}
 
 	p := &person{Name: "Brett"}
-	vals := scan.Values([]string{"n"}, p)
+	vals := Values([]string{"n"}, p)
 
 	EqualValues(t, []interface{}{"Brett"}, vals)
 }
@@ -37,7 +36,7 @@ func TestValuesPanicsWhenRetrievingUnexportedValues(t *testing.T) {
 	}
 
 	Panics(t, func() {
-		scan.Values([]string{"name"}, &person{})
+		Values([]string{"name"}, &person{})
 	})
 }
 
@@ -47,7 +46,7 @@ func TestValuesWorksWithBothTagAndFieldName(t *testing.T) {
 	}
 
 	p := &person{Name: "Brett"}
-	vals := scan.Values([]string{"Name", "n"}, p)
+	vals := Values([]string{"Name", "n"}, p)
 	EqualValues(t, []interface{}{"Brett", "Brett"}, vals)
 }
 
@@ -55,18 +54,32 @@ func TestValuesReturnsAllFieldNames(t *testing.T) {
 	s := new(largeStruct)
 	exp := reflect.Indirect(reflect.ValueOf(s)).NumField()
 
-	vals := scan.Values(scan.Columns(s), s)
+	vals := Values(Columns(s), s)
 	EqualValues(t, exp, len(vals))
+}
+
+func TestValuesReadsFromCacheFirst(t *testing.T) {
+	person := struct {
+		Name string
+	}{
+		Name: "Brett",
+	}
+
+	v := reflect.Indirect(reflect.ValueOf(&person))
+	valuesCache.Store(v, map[string]int{"Name": 0})
+
+	vals := Values([]string{"Name"}, &person)
+	EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
 // benchmarks
 
 func BenchmarkValuesLargeStruct(b *testing.B) {
 	ls := &largeStruct{ID: "test", Index: 88, UUID: "test", IsActive: false, Balance: "test", Picture: "test", Age: 88, EyeColor: "test", Name: "test", Gender: "test", Company: "test", Email: "test", Phone: "test", Address: "test", About: "test", Registered: "test", Latitude: 0.566439688205719, Longitude: 0.48440760374069214, Greeting: "test", FavoriteFruit: "test", AID: "test", AIndex: 19, AUUID: "test", AIsActive: true, ABalance: "test", APicture: "test", AAge: 12, AEyeColor: "test", AName: "test", AGender: "test", ACompany: "test", AEmail: "test", APhone: "test", AAddress: "test", AAbout: "test", ARegistered: "test", ALatitude: 0.16338545083999634, ALongitude: 0.24648870527744293, AGreeting: "test", AFavoriteFruit: "test"}
-	cols := scan.Columns(ls)
+	cols := Columns(ls)
 
 	for i := 0; i < b.N; i++ {
-		scan.Values(cols, ls)
+		Values(cols, ls)
 	}
 }
 

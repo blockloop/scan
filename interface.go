@@ -12,3 +12,12 @@ type RowsScanner interface {
 	Err() error
 	Next() bool
 }
+
+// cache is an interface for a sync.Map that is used for cache internally
+type cache interface {
+	Delete(key interface{})
+	Load(key interface{}) (value interface{}, ok bool)
+	LoadOrStore(key interface{}, value interface{}) (actual interface{}, loaded bool)
+	Range(f func(key interface{}, value interface{}) bool)
+	Store(key interface{}, value interface{})
+}

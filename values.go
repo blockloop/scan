@@ -6,22 +6,11 @@ import (
 	"sync"
 )
 
-var valuesCache = &sync.Map{}
+var valuesCache cache = &sync.Map{}
 
-// Values scans a struct and returns the values associated with
-// the columns provided.
-//
-// Example:
-//
-//   var cols = scan.Columns(&models.User{})
-//
-//   func insertUser(u *models.User) {
-//       vals := scan.Values(cols, u)
-//       sq.Insert("users").
-//           Columns(cols).
-//           Values(vals...).
-//           RunWith(db).ExecContext(ctx)
-//   }
+// Values scans a struct and returns the values associated with the columns
+// provided. Only simple value types are supported (i.e. Bool, Ints, Uints,
+// Floats, Interface, String)
 func Values(cols []string, v interface{}) []interface{} {
 	vals := make([]interface{}, len(cols))
 	model := mustReflectValue(v)

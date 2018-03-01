@@ -1,6 +1,5 @@
 MOCKGEN=$(GOPATH)/bin/mockgen
 GOFILES=$(shell find . -type f -iname '*.go')
-IFACEFILES=$(shell grep -Pirl 'type .* interface' --exclude-dir vendor)
 
 build: $(GOFILES)
 	go build -o /dev/null *.go

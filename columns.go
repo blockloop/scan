@@ -1,8 +1,13 @@
 package scan
 
-import "reflect"
+import (
+	"reflect"
+	"sync"
+)
 
 const dbTag = "db"
+
+var columnsCache cache = &sync.Map{}
 
 // Columns scans a struct and returns a list of strings
 // that represent the assumed column names based on the
@@ -21,9 +26,12 @@ func ColumnsStrict(v interface{}, excluded ...string) []string {
 }
 
 func columns(v interface{}, strict bool, excluded ...string) []string {
-	vVal := mustReflectValue(v)
+	model := mustReflectValue(v)
+	if cache, ok := columnsCache.Load(model); ok {
+		return cache.([]string)
+	}
 
-	numfield := vVal.NumField()
+	numfield := model.NumField()
 	names := make([]string, 0, numfield)
 
 	isExcluded := func(name string) bool {
@@ -36,12 +44,12 @@ func columns(v interface{}, strict bool, excluded ...string) []string {
 	}
 
 	for i := 0; i < numfield; i++ {
-		valField := vVal.Field(i)
+		valField := model.Field(i)
 		if !valField.IsValid() || !valField.CanSet() {
 			continue
 		}
 
-		typeField := vVal.Type().Field(i)
+		typeField := model.Type().Field(i)
 		if tag, ok := typeField.Tag.Lookup(dbTag); ok {
 			if tag != "-" && !isExcluded(tag) {
 				names = append(names, tag)
@@ -60,6 +68,7 @@ func columns(v interface{}, strict bool, excluded ...string) []string {
 		names = append(names, typeField.Name)
 	}
 
+	columnsCache.Store(model, names)
 	return names
 }
 
