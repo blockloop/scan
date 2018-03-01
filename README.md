@@ -106,20 +106,21 @@ vals := scan.Values([]string{"ID", "Name"}, user)
 I find that the usefulness of both Values and Columns lies within using a library such as [sq][].
 
 ```go
-sq.Insert(userCols).
+vals := scan.Values(userCols, &user)
+sq.Insert(userCols...).
         Into("users").
-        Values(scan.Values(userCols, &user))
+        Values(vals...)
 ```
 
 
 ## Why
 
-While many other awesome db project support similar features (i.e. [sqlx](https://github.com/jmoiron/sqlx)) this provides the ability to use other projects like [sq][] to write fluent sql statements and pass the resulting `row` to `scan` for simple scanning
+While many other awesome db project support similar features (i.e. [sqlx](https://github.com/jmoiron/sqlx)) this provides the ability to use the stdlib or [squirrel][sq] to write fluent sql statements and pass the resulting `row` to `scan` for scanning
 
 
 ## Benchmarks
 
-I created some benchmarks in [bench_scanner_test.go](bench_scanner_test.go) to compare using `scan` against manually scanning directly to structs and/or appending to slices. The results aren't staggering as you can see. Roughly 850ns for one field structs and 4.6μs for five field structs.
+I created some benchmarks in [bench_scanner_test.go](bench_scanner_test.go) to compare using `scan` against manually scanning directly to structs and/or appending to slices. The results aren't staggering as you can see. 
 
 ```
 > go test -benchtime=10s -bench=.

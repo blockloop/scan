@@ -5,33 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"testing"
 
 	"github.com/blockloop/scan"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func openDB() *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = db.Exec(`CREATE TABLE persons (
+func exampleDB() *sql.DB {
+	return mustDB(&testing.T{}, `CREATE TABLE persons (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name VARCHAR(120) NOT NULL DEFAULT ''
 	);
-
 	INSERT INTO PERSONS (name)
 	VALUES ('brett'), ('fred');`)
-	if err != nil {
-		panic(err)
-	}
-
-	return db
 }
 
 func ExampleRow() {
-	db := openDB()
+	db := exampleDB()
 	rows, err := db.Query("SELECT * FROM persons LIMIT 1")
 	if err != nil {
 		panic(err)
@@ -53,7 +43,7 @@ func ExampleRow() {
 }
 
 func ExampleRow_scalar() {
-	db := openDB()
+	db := exampleDB()
 	rows, err := db.Query("SELECT name FROM persons LIMIT 1")
 	if err != nil {
 		panic(err)
@@ -72,7 +62,7 @@ func ExampleRow_scalar() {
 }
 
 func ExampleRows() {
-	db := openDB()
+	db := exampleDB()
 	rows, err := db.Query("SELECT * FROM persons ORDER BY name")
 	if err != nil {
 		panic(err)
@@ -94,7 +84,7 @@ func ExampleRows() {
 }
 
 func ExampleRows_primitive() {
-	db := openDB()
+	db := exampleDB()
 	rows, err := db.Query("SELECT name FROM persons ORDER BY name")
 	if err != nil {
 		panic(err)

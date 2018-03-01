@@ -88,7 +88,3 @@ func supportedColumnType(k reflect.Kind) bool {
 		return false
 	}
 }
-
-type scanner interface {
-	Scan(...interface{}) error
-}

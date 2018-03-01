@@ -31,12 +31,11 @@
     "assert",
     "require"
   ]
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
+  revision = "a72618"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4dfa42d687d098eec67a620853b9d5293feea97cd3115fe2142e438d9ff97516"
+  inputs-digest = "2e0f3f80cbaa001dffa42f45e7c61560ae584b62f5bc3ee3fef1aa18e53eb434"
   solver-name = "gps-cdcl"
   solver-version = 1

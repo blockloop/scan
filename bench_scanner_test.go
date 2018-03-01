@@ -5,23 +5,26 @@ import (
 	"testing"
 
 	"github.com/blockloop/scan"
-	"github.com/stretchr/testify/require"
+	. "github.com/stretchr/testify/require"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func BenchmarkScanRowOneField(b *testing.B) {
+func mustDB(t testing.TB, schema string) *sql.DB {
 	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(b, err)
+	NoError(t, err)
 
-	_, err = db.Exec(`CREATE TABLE persons (
+	_, err = db.Exec(schema)
+	NoError(t, err)
+	return db
+}
+
+func BenchmarkSqliteScanRowOneField(b *testing.B) {
+	db := mustDB(b, `CREATE TABLE persons (
 		name VARCHAR(120),
 		age TINYINT
 	);
-
-	INSERT INTO PERSONS (name) VALUES ('brett')
-	`)
-	require.NoError(b, err)
+	INSERT INTO PERSONS (name) VALUES ('brett')`)
 
 	type item struct {
 		First string
@@ -35,18 +38,13 @@ func BenchmarkScanRowOneField(b *testing.B) {
 	}
 }
 
-func BenchmarkDirectScanOneField(b *testing.B) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(b, err)
-
-	_, err = db.Exec(`CREATE TABLE persons (
+func BenchmarkSqliteDirectScanOneField(b *testing.B) {
+	db := mustDB(b, `CREATE TABLE persons (
 		name VARCHAR(120),
 		age TINYINT
 	);
-
 	INSERT INTO PERSONS (name) VALUES ('brett')
 	`)
-	require.NoError(b, err)
 
 	type item struct {
 		First string
@@ -61,22 +59,17 @@ func BenchmarkDirectScanOneField(b *testing.B) {
 	}
 }
 
-func BenchmarkScanRowFiveFields(b *testing.B) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(b, err)
-
-	_, err = db.Exec(`CREATE TABLE persons (
+func BenchmarkSqliteScanRowFiveFields(b *testing.B) {
+	db := mustDB(b, `CREATE TABLE persons (
 		name VARCHAR(120),
 		age TINYINT,
 		active BOOLEAN,
 		city VARCHAR(60),
 		state VARCHAR(12)
 	);
-
 	INSERT INTO PERSONS (name, age, active, city, state)
 	VALUES ('brett', 100, 1, 'dallas', 'tx');
 	`)
-	require.NoError(b, err)
 
 	type item struct {
 		First  string `db:"first"`
@@ -94,22 +87,17 @@ func BenchmarkScanRowFiveFields(b *testing.B) {
 	}
 }
 
-func BenchmarkDirectScanFiveFields(b *testing.B) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(b, err)
-
-	_, err = db.Exec(`CREATE TABLE persons (
+func BenchmarkSqliteDirectScanFiveFields(b *testing.B) {
+	db := mustDB(b, `CREATE TABLE persons (
 		name VARCHAR(120),
 		age TINYINT,
 		active BOOLEAN,
 		city VARCHAR(60),
 		state VARCHAR(12)
 	);
-
 	INSERT INTO PERSONS (name, age, active, city, state)
 	VALUES ('brett', 100, 1, 'dallas', 'tx');
 	`)
-	require.NoError(b, err)
 
 	type item struct {
 		First  string `db:"first"`
@@ -134,15 +122,9 @@ func BenchmarkDirectScanFiveFields(b *testing.B) {
 	}
 }
 
-func BenchmarkScanRowsOneField(b *testing.B) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(b, err)
-
-	_, err = db.Exec(`CREATE TABLE persons ( name VARCHAR(120) );
-
-	INSERT INTO PERSONS (name) VALUES ('brett'), ('fred'), ('george'), ('steve')
-	`)
-	require.NoError(b, err)
+func BenchmarkSqliteScanRowsOneField(b *testing.B) {
+	db := mustDB(b, `CREATE TABLE persons ( name VARCHAR(120) );
+	INSERT INTO PERSONS (name) VALUES ('brett'), ('fred'), ('george'), ('steve')`)
 
 	type item struct {
 		First string `db:"name"`
@@ -156,15 +138,9 @@ func BenchmarkScanRowsOneField(b *testing.B) {
 	}
 }
 
-func BenchmarkDirectScanManyOneField(b *testing.B) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(b, err)
-
-	_, err = db.Exec(`CREATE TABLE persons ( name VARCHAR(120) );
-
-	INSERT INTO PERSONS (name) VALUES ('brett'), ('fred'), ('george'), ('steve')
-	`)
-	require.NoError(b, err)
+func BenchmarkSqliteDirectScanManyOneField(b *testing.B) {
+	db := mustDB(b, `CREATE TABLE persons ( name VARCHAR(120) );
+	INSERT INTO PERSONS (name) VALUES ('brett'), ('fred'), ('george'), ('steve')`)
 
 	type item struct {
 		First string

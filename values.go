@@ -6,7 +6,6 @@ import (
 	"sync"
 )
 
-// var valuesCache = map[reflect.Type]map[string]int{}
 var valuesCache = &sync.Map{}
 
 // Values scans a struct and returns the values associated with
@@ -20,7 +19,7 @@ var valuesCache = &sync.Map{}
 //       vals := scan.Values(cols, u)
 //       sq.Insert("users").
 //           Columns(cols).
-//           Values(vals).
+//           Values(vals...).
 //           RunWith(db).ExecContext(ctx)
 //   }
 func Values(cols []string, v interface{}) []interface{} {

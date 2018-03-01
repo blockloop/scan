@@ -27,17 +27,6 @@ var (
 	nothing = reflect.New(reflect.TypeOf([]byte{})).Elem().Addr().Interface()
 )
 
-// RowsScanner is a database scanner for many rows. It is most commonly the
-// result of *sql.DB Query(...)
-type RowsScanner interface {
-	Close() error
-	Scan(dest ...interface{}) error
-	Columns() ([]string, error)
-	ColumnTypes() ([]*sql.ColumnType, error)
-	Err() error
-	Next() bool
-}
-
 // Row scans a single row into a single variable. It requires that you use
 // db.Query and not db.QueryRow, because QueryRow does not return column names.
 // There is no performance impact in using one over the other. QueryRow only
