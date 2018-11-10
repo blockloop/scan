@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/blockloop/scan"
-	. "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func mustDB(t testing.TB, schema string) *sql.DB {
 	db, err := sql.Open("sqlite3", ":memory:")
-	NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = db.Exec(schema)
-	NoError(t, err)
+	require.NoError(t, err)
 	return db
 }
 

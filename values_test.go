@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValuesScansOnlyCols(t *testing.T) {
@@ -16,7 +16,7 @@ func TestValuesScansOnlyCols(t *testing.T) {
 	p := &person{Name: "Brett"}
 	vals := Values([]string{"Name"}, p)
 
-	EqualValues(t, []interface{}{"Brett"}, vals)
+	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
 func TestValuesScansDBTags(t *testing.T) {
@@ -27,7 +27,7 @@ func TestValuesScansDBTags(t *testing.T) {
 	p := &person{Name: "Brett"}
 	vals := Values([]string{"n"}, p)
 
-	EqualValues(t, []interface{}{"Brett"}, vals)
+	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
 func TestValuesPanicsWhenRetrievingUnexportedValues(t *testing.T) {
@@ -35,7 +35,7 @@ func TestValuesPanicsWhenRetrievingUnexportedValues(t *testing.T) {
 		name string
 	}
 
-	Panics(t, func() {
+	assert.Panics(t, func() {
 		Values([]string{"name"}, &person{})
 	})
 }
@@ -47,7 +47,7 @@ func TestValuesWorksWithBothTagAndFieldName(t *testing.T) {
 
 	p := &person{Name: "Brett"}
 	vals := Values([]string{"Name", "n"}, p)
-	EqualValues(t, []interface{}{"Brett", "Brett"}, vals)
+	assert.EqualValues(t, []interface{}{"Brett", "Brett"}, vals)
 }
 
 func TestValuesReturnsAllFieldNames(t *testing.T) {
@@ -55,7 +55,7 @@ func TestValuesReturnsAllFieldNames(t *testing.T) {
 	exp := reflect.Indirect(reflect.ValueOf(s)).NumField()
 
 	vals := Values(Columns(s), s)
-	EqualValues(t, exp, len(vals))
+	assert.EqualValues(t, exp, len(vals))
 }
 
 func TestValuesReadsFromCacheFirst(t *testing.T) {
@@ -69,7 +69,7 @@ func TestValuesReadsFromCacheFirst(t *testing.T) {
 	valuesCache.Store(v, map[string]int{"Name": 0})
 
 	vals := Values([]string{"Name"}, &person)
-	EqualValues(t, []interface{}{"Brett"}, vals)
+	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
 // benchmarks

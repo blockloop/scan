@@ -4,18 +4,18 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestColumnsPanicsWhenNotAPointer(t *testing.T) {
-	Panics(t, func() {
+	assert.Panics(t, func() {
 		Columns(1)
 	})
 }
 
 func TestColumnsPanicsWhenNotAStruct(t *testing.T) {
 	var num int
-	Panics(t, func() {
+	assert.Panics(t, func() {
 		Columns(&num)
 	})
 }
@@ -26,7 +26,7 @@ func TestColumnsReturnsFieldNames(t *testing.T) {
 	}
 
 	cols := Columns(&person{})
-	EqualValues(t, []string{"Name"}, cols)
+	assert.EqualValues(t, []string{"Name"}, cols)
 }
 
 func TestColumnsReturnsStructTags(t *testing.T) {
@@ -35,7 +35,7 @@ func TestColumnsReturnsStructTags(t *testing.T) {
 	}
 
 	cols := Columns(&person{})
-	EqualValues(t, []string{"name"}, cols)
+	assert.EqualValues(t, []string{"name"}, cols)
 }
 
 func TestColumnsReturnsStructTagsAndFieldNames(t *testing.T) {
@@ -45,7 +45,7 @@ func TestColumnsReturnsStructTagsAndFieldNames(t *testing.T) {
 	}
 
 	cols := Columns(&person{})
-	EqualValues(t, []string{"name", "Age"}, cols)
+	assert.EqualValues(t, []string{"name", "Age"}, cols)
 }
 
 func TestColumnsIgnoresPrivateFields(t *testing.T) {
@@ -55,7 +55,7 @@ func TestColumnsIgnoresPrivateFields(t *testing.T) {
 	}
 
 	cols := Columns(&person{})
-	EqualValues(t, []string{"Age"}, cols)
+	assert.EqualValues(t, []string{"Age"}, cols)
 }
 
 func TestColumnsAddsComplexTypesWhenStructTag(t *testing.T) {
@@ -66,7 +66,7 @@ func TestColumnsAddsComplexTypesWhenStructTag(t *testing.T) {
 	}
 
 	cols := Columns(&person{})
-	EqualValues(t, []string{"address"}, cols)
+	assert.EqualValues(t, []string{"address"}, cols)
 }
 
 func TestColumnsIgnoresComplexTypesWhenNoStructTag(t *testing.T) {
@@ -77,7 +77,7 @@ func TestColumnsIgnoresComplexTypesWhenNoStructTag(t *testing.T) {
 	}
 
 	cols := Columns(&person{})
-	EqualValues(t, []string{}, cols)
+	assert.EqualValues(t, []string{}, cols)
 }
 
 func TestColumnsExcludesFields(t *testing.T) {
@@ -87,7 +87,7 @@ func TestColumnsExcludesFields(t *testing.T) {
 	}
 
 	cols := ColumnsStrict(&person{}, "name")
-	EqualValues(t, []string{"age"}, cols)
+	assert.EqualValues(t, []string{"age"}, cols)
 }
 
 func TestColumnsStrictExcludesUntaggedFields(t *testing.T) {
@@ -97,7 +97,7 @@ func TestColumnsStrictExcludesUntaggedFields(t *testing.T) {
 	}
 
 	cols := ColumnsStrict(&person{})
-	EqualValues(t, []string{"name"}, cols)
+	assert.EqualValues(t, []string{"name"}, cols)
 }
 
 func TestColumnsIgnoresDashTag(t *testing.T) {
@@ -107,7 +107,7 @@ func TestColumnsIgnoresDashTag(t *testing.T) {
 	}
 
 	cols := ColumnsStrict(&person{})
-	EqualValues(t, []string{"name"}, cols)
+	assert.EqualValues(t, []string{"name"}, cols)
 }
 
 func TestColumnsReturnsAllFieldNames(t *testing.T) {
@@ -115,7 +115,7 @@ func TestColumnsReturnsAllFieldNames(t *testing.T) {
 	exp := reflect.Indirect(reflect.ValueOf(s)).NumField()
 
 	cols := Columns(s)
-	EqualValues(t, exp, len(cols))
+	assert.EqualValues(t, exp, len(cols))
 }
 
 func TestColumnsReadsFromCacheFirst(t *testing.T) {
@@ -128,7 +128,7 @@ func TestColumnsReadsFromCacheFirst(t *testing.T) {
 	expected := []string{"fake"}
 	columnsCache.Store(v, expected)
 
-	EqualValues(t, expected, Columns(&person))
+	assert.EqualValues(t, expected, Columns(&person))
 }
 
 func BenchmarkColumnsLargeStruct(b *testing.B) {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/blockloop/scan"
-	. "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -35,8 +35,8 @@ func TestSqliteScanOneScansSingleItem(t *testing.T) {
 
 	var item Item
 	require.NoError(t, scan.Row(&item, row))
-	EqualValues(t, "brett", item.Name)
-	EqualValues(t, 100, item.Age)
+	assert.EqualValues(t, "brett", item.Name)
+	assert.EqualValues(t, 100, item.Age)
 }
 
 func TestSqliteScanOneScansSingleItemWithTags(t *testing.T) {
@@ -61,8 +61,8 @@ func TestSqliteScanOneScansSingleItemWithTags(t *testing.T) {
 
 	var item Item
 	require.NoError(t, scan.Row(&item, row))
-	EqualValues(t, "brett", item.MyName)
-	EqualValues(t, 100, item.MyAge)
+	assert.EqualValues(t, "brett", item.MyName)
+	assert.EqualValues(t, 100, item.MyAge)
 }
 
 func TestSqliteScanOneScansMultipleItems(t *testing.T) {
@@ -88,10 +88,10 @@ func TestSqliteScanOneScansMultipleItems(t *testing.T) {
 	var items []Item
 	require.NoError(t, scan.Rows(&items, row))
 	require.NotNil(t, items)
-	EqualValues(t, "brett", items[0].Name)
-	EqualValues(t, 100, items[0].Age)
-	EqualValues(t, "jones", items[1].Name)
-	EqualValues(t, 100, items[1].Age)
+	assert.EqualValues(t, "brett", items[0].Name)
+	assert.EqualValues(t, 100, items[0].Age)
+	assert.EqualValues(t, "jones", items[1].Name)
+	assert.EqualValues(t, 100, items[1].Age)
 }
 
 func TestSqliteScanOneScansMultipleItemsWithTags(t *testing.T) {
@@ -117,10 +117,10 @@ func TestSqliteScanOneScansMultipleItemsWithTags(t *testing.T) {
 	var items []Item
 	require.NoError(t, scan.Rows(&items, row))
 	require.Len(t, items, 2)
-	EqualValues(t, "brett", items[0].MyName)
-	EqualValues(t, 100, items[0].MyAge)
-	EqualValues(t, "jones", items[1].MyName)
-	EqualValues(t, 100, items[1].MyAge)
+	assert.EqualValues(t, "brett", items[0].MyName)
+	assert.EqualValues(t, 100, items[0].MyAge)
+	assert.EqualValues(t, "jones", items[1].MyName)
+	assert.EqualValues(t, 100, items[1].MyAge)
 }
 
 func TestSqliteScanOneScansPrimitiveTypesStrings(t *testing.T) {
@@ -139,8 +139,8 @@ func TestSqliteScanOneScansPrimitiveTypesStrings(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []string
-	NoError(t, scan.Rows(&items, row))
-	EqualValues(t, []string{"brett", "jones"}, items)
+	assert.NoError(t, scan.Rows(&items, row))
+	assert.EqualValues(t, []string{"brett", "jones"}, items)
 }
 
 func TestSqliteScanOneScansPrimitiveTypesInts(t *testing.T) {
@@ -159,8 +159,8 @@ func TestSqliteScanOneScansPrimitiveTypesInts(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []int
-	NoError(t, scan.Rows(&items, row))
-	EqualValues(t, []int{100, 100}, items)
+	assert.NoError(t, scan.Rows(&items, row))
+	assert.EqualValues(t, []int{100, 100}, items)
 }
 
 func TestSqliteScanOneScansPrimitiveTypesInterface(t *testing.T) {
@@ -179,9 +179,9 @@ func TestSqliteScanOneScansPrimitiveTypesInterface(t *testing.T) {
 	require.NoError(t, err, "execute query")
 
 	var items []interface{}
-	NoError(t, scan.Rows(&items, row))
+	assert.NoError(t, scan.Rows(&items, row))
 	// int64 is what Scan uses by default for numbers
-	Equal(t, []interface{}{int64(100), int64(100)}, items)
+	assert.Equal(t, []interface{}{int64(100), int64(100)}, items)
 }
 
 func TestSqliteScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
@@ -205,8 +205,8 @@ func TestSqliteScanOneScansWhenMoreColumnsThanProperties(t *testing.T) {
 
 	var items []Item
 
-	NoError(t, scan.Rows(&items, row))
-	EqualValues(t, []Item{
+	assert.NoError(t, scan.Rows(&items, row))
+	assert.EqualValues(t, []Item{
 		{Name: "brett"},
 		{Name: "jones"},
 	}, items)
@@ -224,32 +224,32 @@ func TestSqliteScanRowsScansAllColumnTypes(t *testing.T) {
 	err = scan.Rows(&items, rows)
 	require.NoError(t, err)
 
-	EqualValues(t, 2147483640, items[0].ColInt)
-	EqualValues(t, 2147483641, items[0].ColInteger)
-	EqualValues(t, 126, items[0].ColTinyint)
-	EqualValues(t, 127, items[0].ColSmallint)
-	EqualValues(t, 2147483642, items[0].ColMediumint)
-	EqualValues(t, 9223372036854775800, items[0].ColBigint)
-	EqualValues(t, 9223372036854775801, items[0].ColUnsigned)
-	EqualValues(t, 2147483643, items[0].ColInt2)
-	EqualValues(t, 127, items[0].ColInt8)
-	EqualValues(t, "a", items[0].ColCharacter)
-	EqualValues(t, "ab", items[0].ColVarchar)
-	EqualValues(t, "abc", items[0].ColVarying)
-	EqualValues(t, "abcd", items[0].ColNchar)
-	EqualValues(t, "abcde", items[0].ColNative)
-	EqualValues(t, "abcdef", items[0].ColNvarchar)
-	EqualValues(t, "abcdefgh", items[0].ColText)
-	EqualValues(t, "abcdefghi", items[0].ColClob)
-	EqualValues(t, "abcdefghij", items[0].ColBlob)
-	EqualValues(t, "3.1", items[0].ColReal)
-	EqualValues(t, 3.14, items[0].ColDouble)
-	EqualValues(t, 3.141, items[0].ColFloat)
-	EqualValues(t, 3141, items[0].ColNumeric)
-	EqualValues(t, 3.1415, items[0].ColDecimal)
-	Equal(t, true, items[0].ColBoolean)
-	Equal(t, "2017-11-27", items[0].ColDate.Format("2006-01-02"))
-	Equal(t, "2017-11-27 17:59", items[0].ColDatetime.Format("2006-01-02 15:04"))
+	assert.EqualValues(t, 2147483640, items[0].ColInt)
+	assert.EqualValues(t, 2147483641, items[0].ColInteger)
+	assert.EqualValues(t, 126, items[0].ColTinyint)
+	assert.EqualValues(t, 127, items[0].ColSmallint)
+	assert.EqualValues(t, 2147483642, items[0].ColMediumint)
+	assert.EqualValues(t, 9223372036854775800, items[0].ColBigint)
+	assert.EqualValues(t, 9223372036854775801, items[0].ColUnsigned)
+	assert.EqualValues(t, 2147483643, items[0].ColInt2)
+	assert.EqualValues(t, 127, items[0].ColInt8)
+	assert.EqualValues(t, "a", items[0].ColCharacter)
+	assert.EqualValues(t, "ab", items[0].ColVarchar)
+	assert.EqualValues(t, "abc", items[0].ColVarying)
+	assert.EqualValues(t, "abcd", items[0].ColNchar)
+	assert.EqualValues(t, "abcde", items[0].ColNative)
+	assert.EqualValues(t, "abcdef", items[0].ColNvarchar)
+	assert.EqualValues(t, "abcdefgh", items[0].ColText)
+	assert.EqualValues(t, "abcdefghi", items[0].ColClob)
+	assert.EqualValues(t, "abcdefghij", items[0].ColBlob)
+	assert.EqualValues(t, "3.1", items[0].ColReal)
+	assert.EqualValues(t, 3.14, items[0].ColDouble)
+	assert.EqualValues(t, 3.141, items[0].ColFloat)
+	assert.EqualValues(t, 3141, items[0].ColNumeric)
+	assert.EqualValues(t, 3.1415, items[0].ColDecimal)
+	assert.Equal(t, true, items[0].ColBoolean)
+	assert.Equal(t, "2017-11-27", items[0].ColDate.Format("2006-01-02"))
+	assert.Equal(t, "2017-11-27 17:59", items[0].ColDatetime.Format("2006-01-02 15:04"))
 
 }
 

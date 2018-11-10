@@ -10,7 +10,7 @@ import (
 	"github.com/blockloop/scan"
 	"github.com/blockloop/scan/internal/mocks"
 	"github.com/golang/mock/gomock"
-	. "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,7 +33,7 @@ func TestRowsConvertsColumnNamesToTitleText(t *testing.T) {
 	}
 
 	require.NoError(t, scan.Row(&item, rs))
-	Equal(t, "Brett Jones", item.First)
+	assert.Equal(t, "Brett Jones", item.First)
 }
 
 func TestRowsUsesTagName(t *testing.T) {
@@ -54,7 +54,7 @@ func TestRowsUsesTagName(t *testing.T) {
 	}
 
 	require.NoError(t, scan.Row(&item, rs))
-	Equal(t, "Brett Jones", item.FirstAndLastName)
+	assert.Equal(t, "Brett Jones", item.FirstAndLastName)
 }
 
 func TestRowsIgnoresUnsetableColumns(t *testing.T) {
@@ -91,7 +91,7 @@ func TestErrorsWhenScanErrors(t *testing.T) {
 	}
 
 	err := scan.Row(&item, rs)
-	Equal(t, scanErr, err)
+	assert.Equal(t, scanErr, err)
 }
 
 func TestRowsPanicsWhenNotGivenAPointer(t *testing.T) {
@@ -100,7 +100,7 @@ func TestRowsPanicsWhenNotGivenAPointer(t *testing.T) {
 	rs := mocks.NewMockRowsScanner(ctrl)
 	rs.EXPECT().Close().Return(nil)
 
-	Panics(t, func() {
+	assert.Panics(t, func() {
 		scan.Rows("hello", rs)
 	})
 }
@@ -112,7 +112,7 @@ func TestRowsPanicsWhenNotGivenAPointerToSlice(t *testing.T) {
 	rs.EXPECT().Close().Return(nil)
 
 	var item struct{}
-	Panics(t, func() {
+	assert.Panics(t, func() {
 		scan.Rows(&item, rs)
 	})
 }
@@ -130,7 +130,7 @@ func TestErrorsWhenColumnsReturnsError(t *testing.T) {
 		Age  int
 	}
 	err := scan.Rows(&items, rs)
-	Equal(t, columnsErr, err)
+	assert.Equal(t, columnsErr, err)
 }
 
 func TestDoesNothingWhenNoColumns(t *testing.T) {
@@ -146,8 +146,8 @@ func TestDoesNothingWhenNoColumns(t *testing.T) {
 		Age  int
 	}
 	err := scan.Rows(&items, rs)
-	NoError(t, err)
-	Nil(t, items)
+	assert.NoError(t, err)
+	assert.Nil(t, items)
 }
 
 func TestDoesNothingWhenNextIsFalse(t *testing.T) {
@@ -164,8 +164,8 @@ func TestDoesNothingWhenNextIsFalse(t *testing.T) {
 		Age  int
 	}
 	err := scan.Rows(&items, rs)
-	NoError(t, err)
-	Nil(t, items)
+	assert.NoError(t, err)
+	assert.Nil(t, items)
 }
 
 func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
@@ -195,10 +195,10 @@ func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
 
 	require.NoError(t, scan.Rows(&items, rs))
 	require.Len(t, items, 2)
-	Equal(t, "Brett", items[0].First)
-	Equal(t, "Jones", items[0].Last)
-	Equal(t, "Fred", items[1].First)
-	Equal(t, "Jones", items[1].Last)
+	assert.Equal(t, "Brett", items[0].First)
+	assert.Equal(t, "Jones", items[0].Last)
+	assert.Equal(t, "Fred", items[1].First)
+	assert.Equal(t, "Jones", items[1].Last)
 }
 
 func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
@@ -229,13 +229,13 @@ func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
 
 	require.NoError(t, scan.Rows(&items, rs))
 	require.Len(t, items, 2)
-	EqualValues(t, "Brett", items[0].First)
-	EqualValues(t, "", items[0].Last)
-	EqualValues(t, 100, items[0].Age)
+	assert.EqualValues(t, "Brett", items[0].First)
+	assert.EqualValues(t, "", items[0].Last)
+	assert.EqualValues(t, 100, items[0].Age)
 
-	EqualValues(t, "Fred", items[1].First)
-	EqualValues(t, "", items[1].Last)
-	EqualValues(t, 100, items[1].Age)
+	assert.EqualValues(t, "Fred", items[1].First)
+	assert.EqualValues(t, "", items[1].Last)
+	assert.EqualValues(t, 100, items[1].Age)
 }
 
 func TestRowScansToPrimitiveType(t *testing.T) {
@@ -247,12 +247,12 @@ func TestRowScansToPrimitiveType(t *testing.T) {
 	rs.EXPECT().Next().Return(false)
 	rs.EXPECT().Columns().Return([]string{"doesn't matter"}, nil)
 	rs.EXPECT().Scan(gomock.Any()).Do(func(args ...interface{}) {
-		Len(t, args, 1)
+		assert.Len(t, args, 1)
 	}).Return(nil).Times(1)
 	rs.EXPECT().Err().Return(nil)
 
 	var name string
-	NoError(t, scan.Row(&name, rs))
+	assert.NoError(t, scan.Row(&name, rs))
 
 }
 
@@ -272,7 +272,7 @@ func TestReturnsScannerError(t *testing.T) {
 	}
 
 	err := scan.Rows(&persons, rs)
-	EqualValues(t, scanErr, err)
+	assert.EqualValues(t, scanErr, err)
 }
 
 func TestScansPrimitiveSlices(t *testing.T) {
@@ -304,7 +304,7 @@ func TestScansPrimitiveSlices(t *testing.T) {
 		var scanned []interface{}
 
 		require.NoError(t, scan.Rows(&scanned, rs))
-		EqualValues(t, items, scanned)
+		assert.EqualValues(t, items, scanned)
 	}
 }
 
@@ -319,7 +319,7 @@ func TestErrorsWhenMoreThanOneColumnForPrimitiveSlice(t *testing.T) {
 	var fnames []string
 
 	err := scan.Rows(&fnames, rs)
-	EqualValues(t, scan.ErrTooManyColumns, err)
+	assert.EqualValues(t, scan.ErrTooManyColumns, err)
 }
 
 func TestErrorsWhenScanRowToSlice(t *testing.T) {
@@ -332,7 +332,7 @@ func TestErrorsWhenScanRowToSlice(t *testing.T) {
 	}
 
 	err := scan.Row(&persons, rs)
-	EqualValues(t, scan.ErrSliceForRow, err)
+	assert.EqualValues(t, scan.ErrSliceForRow, err)
 }
 
 func TestRowReturnsErrNoRowsWhenQueryHasNoRows(t *testing.T) {
@@ -348,7 +348,7 @@ func TestRowReturnsErrNoRowsWhenQueryHasNoRows(t *testing.T) {
 		First string
 	}
 
-	EqualValues(t, sql.ErrNoRows, scan.Row(&item, rs))
+	assert.EqualValues(t, sql.ErrNoRows, scan.Row(&item, rs))
 }
 
 func TestRowPanicsWhenItemIsNotAPointer(t *testing.T) {
@@ -360,7 +360,7 @@ func TestRowPanicsWhenItemIsNotAPointer(t *testing.T) {
 		First string
 	}
 
-	Panics(t, func() {
+	assert.Panics(t, func() {
 		scan.Row(item, rs)
 	})
 }
