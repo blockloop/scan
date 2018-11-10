@@ -4,6 +4,8 @@
 [![Travis](https://img.shields.io/travis/blockloop/scan.svg)](https://travis-ci.org/blockloop/scan)
 [![Coveralls github](https://img.shields.io/coveralls/github/blockloop/scan.svg)](https://coveralls.io/github/blockloop/scan)
 [![Report Card](https://goreportcard.com/badge/github.com/blockloop/scan)](https://goreportcard.com/report/github.com/blockloop/scan)
+[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=blockloop/scan)](https://dependabot.com)
+
 
 scan provides the ability to use database/sql/rows to scan datasets directly to structs or slices. 
 For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org/github.com/blockloop/scan)
