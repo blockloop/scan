@@ -1,4 +1,4 @@
-# scan 
+# Scan
 
 [![GoDoc](https://godoc.org/github.com/blockloop/scan?status.svg)](https://godoc.org/github.com/blockloop/scan)
 [![Travis](https://img.shields.io/travis/blockloop/scan.svg)](https://travis-ci.org/blockloop/scan)
@@ -7,15 +7,16 @@
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=blockloop/scan)](https://dependabot.com)
 
 
-scan provides the ability to use database/sql/rows to scan datasets directly to structs or slices. 
+Scan provides the ability to use database/sql/rows to scan datasets directly to structs or slices. 
 For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org/github.com/blockloop/scan)
 
 ## Examples
 
 ### Multiple Rows
 ```go
-db, err := sql.Open("sqlite3", "database.sqlite")
-rows, err := db.Query("SELECT * FROM persons")
+db, _ := sql.Open("sqlite3", "database.sqlite")
+rows, _ := db.Query("SELECT * FROM persons")
+
 var persons []Person
 err := scan.Rows(&persons, rows)
 
@@ -29,7 +30,7 @@ fmt.Printf("%#v", persons)
 ### Multiple rows of primitive type
 
 ```go
-rows, err := db.Query("SELECT name FROM persons")
+rows, _ := db.Query("SELECT name FROM persons")
 var names []string
 err := scan.Rows(&names, rows)
 
@@ -44,7 +45,7 @@ fmt.Printf("%#v", names)
 ### Single row
 
 ```go
-rows, err := db.Query("SELECT * FROM persons where name = 'brett' LIMIT 1")
+rows, _ := db.Query("SELECT * FROM persons where name = 'brett' LIMIT 1")
 var person Person
 err := scan.Row(&person, rows)
 
@@ -55,7 +56,7 @@ fmt.Printf("%#v", person)
 ### Scalar value
 
 ```go
-rows, err := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
+rows, _ := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
 var age int8
 err := scan.Row(&age, row)
 
@@ -108,37 +109,34 @@ vals := scan.Values([]string{"ID", "Name"}, user)
 I find that the usefulness of both Values and Columns lies within using a library such as [sq][].
 
 ```go
-vals := scan.Values(userCols, &user)
 sq.Insert(userCols...).
         Into("users").
-        Values(vals...)
+        Values(scan.Values(userCols, &user)...)
 ```
 
+## Configuration
+
+AutoClose: Automatically call `rows.Close()` after scan completes (default true)
 
 ## Why
 
-While many other awesome db project support similar features (i.e. [sqlx](https://github.com/jmoiron/sqlx)) this provides the ability to use the stdlib or [squirrel][sq] to write fluent sql statements and pass the resulting `row` to `scan` for scanning
+While many other projects support similar features (i.e. [sqlx](https://github.com/jmoiron/sqlx)) scan allows you to use any database lib such as the stdlib or [squirrel][sq] to write fluent SQL statements and pass the resulting `rows` to `scan` for scanning.
 
-
-## Benchmarks
-
-I created some benchmarks in [bench_scanner_test.go](bench_scanner_test.go) to compare using `scan` against manually scanning directly to structs and/or appending to slices. The results aren't staggering as you can see. 
+## Benchmarks 
 
 ```
-> go test -benchtime=10s -bench=.
-goos: darwin
+λ go test -bench=. -benchtime=10s ./...
+goos: linux
 goarch: amd64
 pkg: github.com/blockloop/scan
-BenchmarkValuesLargeStruct-8             2000000              8088 ns/op
-BenchmarkValuesLargeStructCached-8      10000000              1564 ns/op
-BenchmarkScanRowOneField-8               1000000             12496 ns/op
-BenchmarkDirectScanOneField-8            2000000              9448 ns/op
-BenchmarkScanRowFiveFields-8              500000             23949 ns/op
-BenchmarkDirectScanFiveFields-8          1000000             16993 ns/op
-BenchmarkScanRowsOneField-8              1000000             16872 ns/op
-BenchmarkDirectScanManyOneField-8        1000000             14030 ns/op
+BenchmarkColumnsLargeStruct-8           50000000               272 ns/op
+BenchmarkValuesLargeStruct-8             2000000              8611 ns/op
+BenchmarkScanRowOneField-8               2000000              8528 ns/op
+BenchmarkScanRowFiveFields-8             1000000             12234 ns/op
+BenchmarkScanTenRowsOneField-8           1000000             16802 ns/op
+BenchmarkScanTenRowsTenFields-8           100000            104587 ns/op
 PASS
-ok      github.com/blockloop/scan       125.432s
+ok      github.com/blockloop/scan       116.055s
 ```
 
 

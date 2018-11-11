@@ -9,7 +9,17 @@ import (
 
 	"github.com/blockloop/scan"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/require"
 )
+
+func mustDB(t testing.TB, schema string) *sql.DB {
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+
+	_, err = db.Exec(schema)
+	require.NoError(t, err)
+	return db
+}
 
 func exampleDB() *sql.DB {
 	return mustDB(&testing.T{}, `CREATE TABLE persons (

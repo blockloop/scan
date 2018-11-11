@@ -36,7 +36,7 @@ func TestValuesPanicsWhenRetrievingUnexportedValues(t *testing.T) {
 	}
 
 	assert.Panics(t, func() {
-		Values([]string{"name"}, &person{})
+		Values([]string{"name"}, &person{name: "Brett"})
 	})
 }
 
