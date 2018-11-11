@@ -3,12 +3,17 @@ sudo: false
 go:
   - "1.9"
   - "1.10"
+  - "1.11"
 
 install:
   - go get -u github.com/golang/dep/...
   - dep ensure
   - go get golang.org/x/tools/cmd/cover github.com/mattn/goveralls
+  # install gometalinter to ./bin
+  - curl -L https://git.io/vp6lP | sh
+  - export PATH="$GOPATH/bin:$PWD/bin:$PATH"
 
 script:
+  - gometalinter -t false ./...
   - go test -tags=integration -coverprofile=.coverprofile .
   - goveralls -coverprofile=.coverprofile -service=travis-ci -repotoken $COVERALLS_API_TOKEN
