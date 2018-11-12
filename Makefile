@@ -1,16 +1,13 @@
-MOCKGEN=$(GOPATH)/bin/mockgen
 GOFILES=$(shell find . -type f -iname '*.go')
 
+.PHONY: build
 build: $(GOFILES)
 	go build -o /dev/null *.go
-.PHONY: build
 
+.PHONY: test
 test:
 	go test -tags=integration ./...
-.PHONY: test
 
-internal/mocks/mocks.go: interface.go | $(MOCKGEN)
-	$(MOCKGEN) -source=$< -destination=$@ -package=mocks
-
-$(MOCKGEN):
-	go get github.com/golang/mock/mockgen
+.PHONY: lint
+lint:
+	gometalinter -t false ./...
