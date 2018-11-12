@@ -16,7 +16,7 @@ func ExampleValues() {
 	}
 
 	cols := []string{"id", "name"}
-	vals := scan.Values(cols, &person)
+	vals, _ := scan.Values(cols, &person)
 	fmt.Printf("%+v", vals)
 	// Output:
 	// [1 Brett]
@@ -28,7 +28,7 @@ func ExampleColumns() {
 		Name string
 	}
 
-	cols := scan.Columns(&person)
+	cols, _ := scan.Columns(&person)
 	fmt.Printf("%+v", cols)
 	// Output:
 	// [person_id Name]
@@ -41,7 +41,7 @@ func ExampleColumns_exclude() {
 		Age  string `db:"-"`
 	}
 
-	cols := scan.Columns(&person)
+	cols, _ := scan.Columns(&person)
 	fmt.Printf("%+v", cols)
 	// Output:
 	// [id name]
@@ -54,7 +54,7 @@ func ExampleColumnsStrict() {
 		Age  string `db:"age"`
 	}
 
-	cols := scan.ColumnsStrict(&person)
+	cols, _ := scan.ColumnsStrict(&person)
 	fmt.Printf("%+v", cols)
 	// Output:
 	// [id age]

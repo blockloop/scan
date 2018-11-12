@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValuesScansOnlyCols(t *testing.T) {
@@ -14,7 +15,8 @@ func TestValuesScansOnlyCols(t *testing.T) {
 	}
 
 	p := &person{Name: "Brett"}
-	vals := Values([]string{"Name"}, p)
+	vals, err := Values([]string{"Name"}, p)
+	require.NoError(t, err)
 
 	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
@@ -25,19 +27,27 @@ func TestValuesScansDBTags(t *testing.T) {
 	}
 
 	p := &person{Name: "Brett"}
-	vals := Values([]string{"n"}, p)
+	vals, err := Values([]string{"n"}, p)
+	require.NoError(t, err)
 
 	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
-func TestValuesPanicsWhenRetrievingUnexportedValues(t *testing.T) {
+func TestValuesReturnsErrorWhenPassingNonPointer(t *testing.T) {
+	_, err := Values([]string{"Name"}, "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "pointer")
+}
+
+func TestValuesReturnsErrorWhenRetrievingUnexportedValues(t *testing.T) {
 	type person struct {
 		name string
 	}
 
-	assert.Panics(t, func() {
-		Values([]string{"name"}, &person{name: "Brett"})
-	})
+	fieldName := "name"
+	_, err := Values([]string{fieldName}, &person{name: "Brett"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), fieldName)
 }
 
 func TestValuesWorksWithBothTagAndFieldName(t *testing.T) {
@@ -46,7 +56,8 @@ func TestValuesWorksWithBothTagAndFieldName(t *testing.T) {
 	}
 
 	p := &person{Name: "Brett"}
-	vals := Values([]string{"Name", "n"}, p)
+	vals, err := Values([]string{"Name", "n"}, p)
+	require.NoError(t, err)
 	assert.EqualValues(t, []interface{}{"Brett", "Brett"}, vals)
 }
 
@@ -54,7 +65,10 @@ func TestValuesReturnsAllFieldNames(t *testing.T) {
 	s := new(largeStruct)
 	exp := reflect.Indirect(reflect.ValueOf(s)).NumField()
 
-	vals := Values(Columns(s), s)
+	cols, err := Columns(s)
+	assert.NoError(t, err)
+	vals, err := Values(cols, s)
+	require.NoError(t, err)
 	assert.EqualValues(t, exp, len(vals))
 }
 
@@ -68,7 +82,8 @@ func TestValuesReadsFromCacheFirst(t *testing.T) {
 	v := reflect.Indirect(reflect.ValueOf(&person))
 	valuesCache.Store(v, map[string]int{"Name": 0})
 
-	vals := Values([]string{"Name"}, &person)
+	vals, err := Values([]string{"Name"}, &person)
+	require.NoError(t, err)
 	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
@@ -76,7 +91,8 @@ func TestValuesReadsFromCacheFirst(t *testing.T) {
 
 func BenchmarkValuesLargeStruct(b *testing.B) {
 	ls := &largeStruct{ID: "test", Index: 88, UUID: "test", IsActive: false, Balance: "test", Picture: "test", Age: 88, EyeColor: "test", Name: "test", Gender: "test", Company: "test", Email: "test", Phone: "test", Address: "test", About: "test", Registered: "test", Latitude: 0.566439688205719, Longitude: 0.48440760374069214, Greeting: "test", FavoriteFruit: "test", AID: "test", AIndex: 19, AUUID: "test", AIsActive: true, ABalance: "test", APicture: "test", AAge: 12, AEyeColor: "test", AName: "test", AGender: "test", ACompany: "test", AEmail: "test", APhone: "test", AAddress: "test", AAbout: "test", ARegistered: "test", ALatitude: 0.16338545083999634, ALongitude: 0.24648870527744293, AGreeting: "test", AFavoriteFruit: "test"}
-	cols := Columns(ls)
+	cols, err := Columns(ls)
+	assert.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
 		Values(cols, ls)

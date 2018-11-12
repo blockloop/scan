@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/blockloop/scan"
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkScanRowOneField(b *testing.B) {
@@ -28,7 +29,8 @@ func BenchmarkScanRowFiveFields(b *testing.B) {
 		City   string `db:"city"`
 		State  string `db:"state"`
 	}
-	cols := scan.Columns(&item)
+	cols, err := scan.Columns(&item)
+	assert.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -44,7 +46,8 @@ func BenchmarkScanTenRowsOneField(b *testing.B) {
 		First string `db:"First"`
 	}
 	var items []item
-	cols := scan.Columns(&item{})
+	cols, err := scan.Columns(&item{})
+	assert.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -69,7 +72,8 @@ func BenchmarkScanTenRowsTenFields(b *testing.B) {
 		Ten   string `db:"ten"`
 	}
 	var items []item
-	cols := scan.Columns(&item{})
+	cols, err := scan.Columns(&item{})
+	assert.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

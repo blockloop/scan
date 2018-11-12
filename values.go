@@ -11,20 +11,24 @@ var valuesCache cache = &sync.Map{}
 // Values scans a struct and returns the values associated with the columns
 // provided. Only simple value types are supported (i.e. Bool, Ints, Uints,
 // Floats, Interface, String)
-func Values(cols []string, v interface{}) []interface{} {
+func Values(cols []string, v interface{}) ([]interface{}, error) {
 	vals := make([]interface{}, len(cols))
-	model := mustReflectValue(v)
+	model, err := reflectValue(v)
+	if err != nil {
+		return nil, fmt.Errorf("Values: %v", err)
+	}
+
 	fields := loadFields(model)
 
 	for i, col := range cols {
 		j, ok := fields[col]
 		if !ok {
-			panic(fmt.Sprintf("column %T.%q either does not exist or is unexported", v, col))
+			return nil, fmt.Errorf("field %T.%q either does not exist or is unexported", v, col)
 		}
 
 		vals[i] = model.Field(j).Interface()
 	}
-	return vals
+	return vals, nil
 }
 
 func loadFields(val reflect.Value) map[string]int {

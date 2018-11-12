@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -14,21 +15,25 @@ var columnsCache cache = &sync.Map{}
 // db struct tag, or the field name. Any field or struct
 // tag that matches a string within the excluded list
 // will be excluded from the result
-func Columns(v interface{}, excluded ...string) []string {
+func Columns(v interface{}, excluded ...string) ([]string, error) {
 	return columns(v, false, excluded...)
 }
 
 // ColumnsStrict is identical to Columns, but it only
 // searches struct tags and excludes fields not tagged
 // with the db struct tag
-func ColumnsStrict(v interface{}, excluded ...string) []string {
+func ColumnsStrict(v interface{}, excluded ...string) ([]string, error) {
 	return columns(v, true, excluded...)
 }
 
-func columns(v interface{}, strict bool, excluded ...string) []string {
-	model := mustReflectValue(v)
+func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
+	model, err := reflectValue(v)
+	if err != nil {
+		return nil, fmt.Errorf("columns: %v", err)
+	}
+
 	if cache, ok := columnsCache.Load(model); ok {
-		return cache.([]string)
+		return cache.([]string), nil
 	}
 
 	numfield := model.NumField()
@@ -69,21 +74,21 @@ func columns(v interface{}, strict bool, excluded ...string) []string {
 	}
 
 	columnsCache.Store(model, names)
-	return names
+	return names, nil
 }
 
-func mustReflectValue(v interface{}) reflect.Value {
+func reflectValue(v interface{}) (reflect.Value, error) {
 	vType := reflect.TypeOf(v)
 	vKind := vType.Kind()
 	if vKind != reflect.Ptr {
-		panic(vKind.String() + ": must be a pointer")
+		return reflect.Value{}, fmt.Errorf("%q must be a pointer", vKind.String())
 	}
 
 	vVal := reflect.Indirect(reflect.ValueOf(v))
 	if vVal.Kind() != reflect.Struct {
-		panic(vKind.String() + ": must be a pointer to a struct")
+		return reflect.Value{}, fmt.Errorf("%q must be a pointer to a struct", vKind.String())
 	}
-	return vVal
+	return vVal, nil
 }
 
 func supportedColumnType(k reflect.Kind) bool {

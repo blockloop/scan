@@ -72,21 +72,21 @@ func TestErrorsWhenScanErrors(t *testing.T) {
 	assert.Equal(t, expected, err)
 }
 
-func TestRowsPanicsWhenNotGivenAPointer(t *testing.T) {
+func TestRowsErrorsWhenNotGivenAPointer(t *testing.T) {
 	rows := fakeRowsWithColumns(t, 1, "name")
 
-	assert.Panics(t, func() {
-		scan.Rows("hello", rows)
-	})
+	err := scan.Rows("hello", rows)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "pointer")
 }
 
-func TestRowsPanicsWhenNotGivenAPointerToSlice(t *testing.T) {
+func TestRowsErrorsWhenNotGivenAPointerToSlice(t *testing.T) {
 	rows := fakeRowsWithColumns(t, 1, "name")
 
 	var item struct{}
-	assert.Panics(t, func() {
-		scan.Rows(&item, rows)
-	})
+	err := scan.Rows(&item, rows)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "slice")
 }
 
 func TestErrorsWhenColumnsReturnsError(t *testing.T) {
@@ -250,16 +250,16 @@ func TestRowReturnsErrNoRowsWhenQueryHasNoRows(t *testing.T) {
 	assert.EqualValues(t, sql.ErrNoRows, scan.Row(&item, rows))
 }
 
-func TestRowPanicsWhenItemIsNotAPointer(t *testing.T) {
+func TestRowErrorsWhenItemIsNotAPointer(t *testing.T) {
 	rows := &FakeRowsScanner{}
 
 	var item struct {
 		First string
 	}
 
-	assert.Panics(t, func() {
-		scan.Row(item, rows)
-	})
+	err := scan.Row(item, rows)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "pointer")
 }
 
 func setValue(ptr, val interface{}) {

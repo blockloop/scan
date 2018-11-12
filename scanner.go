@@ -3,6 +3,7 @@ package scan
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -31,7 +32,7 @@ var ()
 func Row(v interface{}, rows RowsScanner) error {
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
-		panic(k.String() + ": must be a pointer")
+		return fmt.Errorf("%q must be a pointer", k.String())
 	}
 
 	vType = vType.Elem()
@@ -64,11 +65,11 @@ func Rows(v interface{}, rows RowsScanner) error {
 	}
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
-		panic(k.String() + ": must be a pointer")
+		return fmt.Errorf("%q must be a pointer", k.String())
 	}
 	sliceType := vType.Elem()
 	if reflect.Slice != sliceType.Kind() {
-		panic(sliceType.String() + ": must be a slice")
+		return fmt.Errorf("%q must be a slice", sliceType.String())
 	}
 
 	sliceVal := reflect.Indirect(reflect.ValueOf(v))
