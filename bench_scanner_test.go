@@ -6,23 +6,6 @@ import (
 	"github.com/blockloop/scan"
 )
 
-func fakeRowsWithColumns(t testing.TB, rowCnt int, cols ...string) *FakeRowsScanner {
-	i := int32(0)
-	max := int32(rowCnt)
-
-	r := &FakeRowsScanner{}
-	r.ColumnsReturns(cols, nil)
-	r.NextStub = func() bool {
-		if i >= max {
-			return false
-		}
-		i++
-		return true
-	}
-
-	return r
-}
-
 func BenchmarkScanRowOneField(b *testing.B) {
 	var item struct {
 		First string

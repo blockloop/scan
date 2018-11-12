@@ -8,192 +8,139 @@ import (
 	"testing"
 
 	"github.com/blockloop/scan"
-	"github.com/blockloop/scan/internal/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRowsConvertsColumnNamesToTitleText(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"first"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(1)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Scan(gomock.Any()).Do(func(v interface{}) {
-		set(v, "Brett Jones")
-	}).Return(nil)
-
-	rs.EXPECT().Err().Return(nil)
-
 	var item struct {
 		First string
 	}
 
-	require.NoError(t, scan.Row(&item, rs))
-	assert.Equal(t, "Brett Jones", item.First)
+	expected := "Brett Jones"
+	rows := fakeRowsWithRecords(t, []string{"First"},
+		[]interface{}{expected},
+	)
+
+	require.NoError(t, scan.Row(&item, rows))
+	assert.Equal(t, 1, rows.ScanCallCount())
+	assert.Equal(t, expected, item.First)
 }
 
 func TestRowsUsesTagName(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"first_and_last_name"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(1)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Scan(gomock.Any()).Do(func(v interface{}) {
-		set(v, "Brett Jones")
-	}).Return(nil)
-	rs.EXPECT().Err().Return(nil)
+	expected := "Brett Jones"
+	rows := fakeRowsWithRecords(t, []string{"first_and_last_name"},
+		[]interface{}{expected},
+	)
 
 	var item struct {
 		FirstAndLastName string `db:"first_and_last_name"`
 	}
 
-	require.NoError(t, scan.Row(&item, rs))
-	assert.Equal(t, "Brett Jones", item.FirstAndLastName)
+	require.NoError(t, scan.Row(&item, rows))
+	assert.Equal(t, 1, rows.ScanCallCount())
+	assert.Equal(t, expected, item.FirstAndLastName)
 }
 
 func TestRowsIgnoresUnsetableColumns(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"first_and_last_name"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(1)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Scan(gomock.Any()).Return(nil)
-	rs.EXPECT().Err().Return(nil)
+	expected := "Brett Jones"
+	rows := fakeRowsWithRecords(t, []string{"first_and_last_name"},
+		[]interface{}{expected},
+	)
 
 	var item struct {
 		// private, unsetable
 		firstAndLastName string `db:"first_and_last_name"`
 	}
 
-	require.NoError(t, scan.Row(&item, rs))
+	require.NoError(t, scan.Row(&item, rows))
+	assert.NotEqual(t, expected, item.firstAndLastName)
 }
 
 func TestErrorsWhenScanErrors(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"first_and_last_name"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(1)
-	scanErr := errors.New("broken")
-	rs.EXPECT().Scan(gomock.Any()).Return(scanErr).Times(1)
+	expected := errors.New("asdf")
+	rows := fakeRowsWithColumns(t, 1, "first_and_last_name")
+	rows.ScanStub = func(...interface{}) error {
+		return expected
+	}
 
 	var item struct {
 		FirstAndLastName string `db:"first_and_last_name"`
 	}
 
-	err := scan.Row(&item, rs)
-	assert.Equal(t, scanErr, err)
+	err := scan.Row(&item, rows)
+	assert.Equal(t, expected, err)
 }
 
 func TestRowsPanicsWhenNotGivenAPointer(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Close().Return(nil)
+	rows := fakeRowsWithColumns(t, 1, "name")
 
 	assert.Panics(t, func() {
-		scan.Rows("hello", rs)
+		scan.Rows("hello", rows)
 	})
 }
 
 func TestRowsPanicsWhenNotGivenAPointerToSlice(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Close().Return(nil)
+	rows := fakeRowsWithColumns(t, 1, "name")
 
 	var item struct{}
 	assert.Panics(t, func() {
-		scan.Rows(&item, rs)
+		scan.Rows(&item, rows)
 	})
 }
 
 func TestErrorsWhenColumnsReturnsError(t *testing.T) {
-	columnsErr := errors.New("broken")
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return(nil, columnsErr)
-	rs.EXPECT().Close().Return(nil)
+	expected := errors.New("asdf")
+	rows := &FakeRowsScanner{
+		ColumnsStub: func() ([]string, error) {
+			return nil, expected
+		},
+	}
 
 	var items []struct {
 		Name string
 		Age  int
 	}
-	err := scan.Rows(&items, rs)
-	assert.Equal(t, columnsErr, err)
+	err := scan.Rows(&items, rows)
+	assert.Equal(t, expected, err)
 }
 
 func TestDoesNothingWhenNoColumns(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(1)
+	rows := fakeRowsWithColumns(t, 1)
 
 	var items []struct {
 		Name string
 		Age  int
 	}
-	err := scan.Rows(&items, rs)
+	err := scan.Rows(&items, rows)
 	assert.NoError(t, err)
 	assert.Nil(t, items)
 }
 
 func TestDoesNothingWhenNextIsFalse(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"col_int"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Err().Return(nil)
+	rows := fakeRowsWithColumns(t, 0, "Name")
 
 	var items []struct {
 		Name string
 		Age  int
 	}
-	err := scan.Rows(&items, rs)
+	err := scan.Rows(&items, rows)
 	assert.NoError(t, err)
 	assert.Nil(t, items)
 }
 
 func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"first", "last", "age"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(2)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Err().Return(nil)
-
-	rs.EXPECT().Scan(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(v1, v2, v3 interface{}) {
-		set(v1, "Brett")
-		set(v2, "Jones")
-	}).Return(nil).Times(1)
-
-	rs.EXPECT().Scan(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(v1, v2, v3 interface{}) {
-		set(v1, "Fred")
-		set(v2, "Jones")
-	}).Return(nil).Times(1)
+	rows := fakeRowsWithRecords(t, []string{"First", "Last", "Age"},
+		[]interface{}{"Brett", "Jones"},
+		[]interface{}{"Fred", "Jones"},
+	)
 
 	var items []struct {
 		First string
 		Last  string
 	}
 
-	require.NoError(t, scan.Rows(&items, rs))
+	require.NoError(t, scan.Rows(&items, rows))
 	require.Len(t, items, 2)
 	assert.Equal(t, "Brett", items[0].First)
 	assert.Equal(t, "Jones", items[0].Last)
@@ -202,24 +149,10 @@ func TestIgnoresColumnsThatDoNotHaveFields(t *testing.T) {
 }
 
 func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"first", "age"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(2)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Err().Return(nil)
-
-	rs.EXPECT().Scan(gomock.Any(), gomock.Any()).Do(func(v1, v2 interface{}) {
-		set(v1, "Brett")
-		set(v2, int8(100))
-	}).Return(nil).Times(1)
-
-	rs.EXPECT().Scan(gomock.Any(), gomock.Any()).Do(func(v1, v2 interface{}) {
-		set(v1, "Fred")
-		set(v2, int8(100))
-	}).Return(nil).Times(1)
+	rows := fakeRowsWithRecords(t, []string{"first", "age"},
+		[]interface{}{"Brett", int8(40)},
+		[]interface{}{"Fred", int8(50)},
+	)
 
 	var items []struct {
 		First string
@@ -227,51 +160,39 @@ func TestIgnoresFieldsThatDoNotHaveColumns(t *testing.T) {
 		Age   int8
 	}
 
-	require.NoError(t, scan.Rows(&items, rs))
+	require.NoError(t, scan.Rows(&items, rows))
 	require.Len(t, items, 2)
 	assert.EqualValues(t, "Brett", items[0].First)
 	assert.EqualValues(t, "", items[0].Last)
-	assert.EqualValues(t, 100, items[0].Age)
+	assert.EqualValues(t, 40, items[0].Age)
 
 	assert.EqualValues(t, "Fred", items[1].First)
 	assert.EqualValues(t, "", items[1].Last)
-	assert.EqualValues(t, 100, items[1].Age)
+	assert.EqualValues(t, 50, items[1].Age)
 }
 
 func TestRowScansToPrimitiveType(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Close().Return(nil)
-	rs.EXPECT().Next().Return(true).Times(1)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Columns().Return([]string{"doesn't matter"}, nil)
-	rs.EXPECT().Scan(gomock.Any()).Do(func(args ...interface{}) {
-		assert.Len(t, args, 1)
-	}).Return(nil).Times(1)
-	rs.EXPECT().Err().Return(nil)
+	expected := "Bob"
+	rows := fakeRowsWithRecords(t, []string{"name"},
+		[]interface{}{expected},
+	)
 
 	var name string
-	assert.NoError(t, scan.Row(&name, rs))
-
+	assert.NoError(t, scan.Row(&name, rows))
+	assert.Equal(t, expected, name)
 }
 
 func TestReturnsScannerError(t *testing.T) {
 	scanErr := errors.New("broken")
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Err().Return(scanErr)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Columns().Return([]string{"name"}, nil)
+	rows := fakeRowsWithColumns(t, 1, "Name")
+	rows.ErrReturns(scanErr)
 
 	var persons []struct {
 		Name string
 	}
 
-	err := scan.Rows(&persons, rs)
+	err := scan.Rows(&persons, rows)
 	assert.EqualValues(t, scanErr, err)
 }
 
@@ -279,93 +200,69 @@ func TestScansPrimitiveSlices(t *testing.T) {
 	table := [][]interface{}{
 		{1, 2, 3},
 		{"brett", "fred", "geoff"},
-		{true, false, true},
+		{true, false},
 		{1.0, 1.1, 1.2},
 	}
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 	for _, items := range table {
-		queue := newSimpleQueue(items)
-
-		rs := mocks.NewMockRowsScanner(ctrl)
-		rs.EXPECT().Columns().Return([]string{"whatever"}, nil)
-		rs.EXPECT().Close().Return(nil).Times(1)
-		rs.EXPECT().Next().Return(true).Times(len(items))
-		rs.EXPECT().Next().Return(false).AnyTimes()
-		rs.EXPECT().Err().Return(nil).AnyTimes()
-
-		rs.EXPECT().Scan(gomock.Any()).Do(func(v interface{}) {
-			val, ok := queue.Pop()
-			require.True(t, ok, "pop value")
-			set(v, val)
-		}).Return(nil).AnyTimes()
+		// each item in items is a single value which needs to be converted
+		// to a single row with a scalar value
+		dbrows := make([][]interface{}, len(items))
+		for i, item := range items {
+			dbrows[i] = []interface{}{item}
+		}
+		rows := fakeRowsWithRecords(t, []string{"a"}, dbrows...)
 
 		var scanned []interface{}
 
-		require.NoError(t, scan.Rows(&scanned, rs))
+		require.NoError(t, scan.Rows(&scanned, rows))
 		assert.EqualValues(t, items, scanned)
 	}
 }
 
 func TestErrorsWhenMoreThanOneColumnForPrimitiveSlice(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"fname", "lname"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(true).Times(1)
+	rows := fakeRowsWithColumns(t, 1, "fname", "lname")
 
 	var fnames []string
 
-	err := scan.Rows(&fnames, rs)
+	err := scan.Rows(&fnames, rows)
 	assert.EqualValues(t, scan.ErrTooManyColumns, err)
 }
 
 func TestErrorsWhenScanRowToSlice(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
+	rows := &FakeRowsScanner{}
 
 	var persons []struct {
 		ID int
 	}
 
-	err := scan.Row(&persons, rs)
+	err := scan.Row(&persons, rows)
 	assert.EqualValues(t, scan.ErrSliceForRow, err)
 }
 
 func TestRowReturnsErrNoRowsWhenQueryHasNoRows(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
-	rs.EXPECT().Columns().Return([]string{"first", "last"}, nil)
-	rs.EXPECT().Close().Return(nil).Times(1)
-	rs.EXPECT().Next().Return(false)
-	rs.EXPECT().Err().Return(nil)
+	rows := fakeRowsWithColumns(t, 0, "First")
 
 	var item struct {
 		First string
 	}
 
-	assert.EqualValues(t, sql.ErrNoRows, scan.Row(&item, rs))
+	assert.EqualValues(t, sql.ErrNoRows, scan.Row(&item, rows))
 }
 
 func TestRowPanicsWhenItemIsNotAPointer(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	rs := mocks.NewMockRowsScanner(ctrl)
+	rows := &FakeRowsScanner{}
 
 	var item struct {
 		First string
 	}
 
 	assert.Panics(t, func() {
-		scan.Row(item, rs)
+		scan.Row(item, rows)
 	})
 }
 
-func set(ptr, val interface{}) {
+func setValue(ptr, val interface{}) {
 	reflect.ValueOf(ptr).Elem().Set(reflect.ValueOf(val))
 }
 

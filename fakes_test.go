@@ -4,9 +4,45 @@ package scan_test
 import (
 	sql "database/sql"
 	sync "sync"
+	"testing"
 
 	scan "github.com/blockloop/scan"
 )
+
+func fakeRowsWithColumns(t testing.TB, rowCnt int, cols ...string) *FakeRowsScanner {
+	r := &FakeRowsScanner{}
+	r.ColumnsReturns(cols, nil)
+	r.NextStub = func() bool {
+		// return true until the rowCnt is reached
+		return r.NextCallCount() <= rowCnt
+	}
+
+	return r
+}
+
+var record map[string]interface{}
+
+// fakeRowsWithRecords creates a fake row scanner that acts like a sql.DB.Rows
+// scanner. You can call Scan(&item.Name, &item.Age), etc
+func fakeRowsWithRecords(t testing.TB, cols []string, rows ...[]interface{}) *FakeRowsScanner {
+	r := fakeRowsWithColumns(t, len(rows), cols...)
+	r.ScanStub = func(ps ...interface{}) error {
+		i := r.ScanCallCount() - 1
+		if i > len(rows) {
+			return nil
+		}
+		vals := rows[i]
+
+		for j, ptr := range ps {
+			if j < len(vals) {
+				setValue(ptr, vals[j])
+			}
+		}
+		return nil
+	}
+
+	return r
+}
 
 type FakeRowsScanner struct {
 	CloseStub        func() error

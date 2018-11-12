@@ -21,11 +21,7 @@ var (
 	AutoClose = true
 )
 
-var (
-	// nothing is a pointer which will be scanned to for columns that have no place
-	// on the struct
-	nothing = reflect.New(reflect.TypeOf([]byte{})).Elem().Addr().Interface()
-)
+var ()
 
 // Row scans a single row into a single variable. It requires that you use
 // db.Query and not db.QueryRow, because QueryRow does not return column names.
@@ -132,8 +128,9 @@ func structPointers(stct reflect.Value, cols []string) []interface{} {
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
 			// have to add if we found a column because Scan() requires
 			// len(cols) arguments or it will error. This way we can scan to
-			// nowhere
-			pointers = append(pointers, nothing)
+			// a useless pointer
+			var nothing interface{}
+			pointers = append(pointers, &nothing)
 			continue
 		}
 
