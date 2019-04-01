@@ -15,7 +15,7 @@ func Values(cols []string, v interface{}) ([]interface{}, error) {
 	vals := make([]interface{}, len(cols))
 	model, err := reflectValue(v)
 	if err != nil {
-		return nil, fmt.Errorf("Values: %v", err)
+		return nil, fmt.Errorf("values: %v", err)
 	}
 
 	fields := loadFields(model)

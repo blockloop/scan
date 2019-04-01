@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -21,8 +23,6 @@ var (
 	// is complete. If you set it to false, then you must defer rows.Close() manually
 	AutoClose = true
 )
-
-var ()
 
 // Row scans a single row into a single variable. It requires that you use
 // db.Query and not db.QueryRow, because QueryRow does not return column names.
@@ -59,10 +59,11 @@ func Row(v interface{}, rows RowsScanner) error {
 }
 
 // Rows scans sql rows into a slice (v)
-func Rows(v interface{}, rows RowsScanner) error {
+func Rows(v interface{}, rows RowsScanner) (outerr error) {
 	if AutoClose {
-		defer rows.Close()
+		defer closeRows(rows)
 	}
+
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
 		return fmt.Errorf("%q must be a pointer", k.String())
@@ -138,4 +139,10 @@ func structPointers(stct reflect.Value, cols []string) []interface{} {
 		pointers = append(pointers, fieldVal.Addr().Interface())
 	}
 	return pointers
+}
+
+func closeRows(c io.Closer) {
+	if err := c.Close(); err != nil {
+		log.Printf("failed to close rows: %+v\n", err)
+	}
 }

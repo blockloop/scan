@@ -1,19 +1,15 @@
 language: go
 sudo: false
 go:
-  - "1.9"
-  - "1.10"
   - "1.11"
+  - "1.12"
 
 install:
-  - go get -u github.com/golang/dep/...
-  - dep ensure
   - go get golang.org/x/tools/cmd/cover github.com/mattn/goveralls
-  # install gometalinter to ./bin
-  - curl -L https://git.io/vp6lP | sh
-  - export PATH="$GOPATH/bin:$PWD/bin:$PATH"
+  # install golangci-lint to ./bin
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.16.0
 
 script:
-  - gometalinter -t false ./...
+  - ./bin/golangci-lint run ./...
   - go test -tags=integration -coverprofile=.coverprofile .
   - goveralls -coverprofile=.coverprofile -service=travis-ci -repotoken $COVERALLS_API_TOKEN

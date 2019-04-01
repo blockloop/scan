@@ -1,0 +1,43 @@
+---
+
+run:
+  tests: false
+  skip-files:
+    - "example_.+_test.go$"
+
+# golangci.com configuration
+# https://github.com/golangci/golangci/wiki/Configuration
+linters-settings:
+  govet:
+    check-shadowing: true
+  golint:
+    min-confidence: 0.3
+  gofmt:
+    simplify: true
+  gocyclo:
+    min-complexity: 15
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 120
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+
+linters:
+  enable-all: true
+  disable:
+    - maligned
+    - prealloc
+    - gochecknoglobals
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - text: "weak cryptographic primitive"
+      linters:
+        - gosec
