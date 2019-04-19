@@ -262,6 +262,42 @@ func TestRowErrorsWhenItemIsNotAPointer(t *testing.T) {
 	assert.Contains(t, err.Error(), "pointer")
 }
 
+func TestRowStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
+	rows := fakeRowsWithRecords(t, []string{"First", "Last"},
+		[]interface{}{"Brett", "Jones"},
+	)
+
+	var item struct {
+		First string `db:"First"`
+		Last  string
+	}
+
+	require.NoError(t, scan.RowStrict(&item, rows))
+	assert.Equal(t, "Brett", item.First)
+	assert.Equal(t, "", item.Last)
+}
+
+
+func TestRowsStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
+	rows := fakeRowsWithRecords(t, []string{"First", "Last"},
+		[]interface{}{"Brett", "Jones"},
+		[]interface{}{"Fred", "Jones"},
+	)
+
+	var items []struct {
+		First string `db:"First"`
+		Last  string
+	}
+
+	require.NoError(t, scan.RowsStrict(&items, rows))
+	require.Len(t, items, 2)
+	assert.Equal(t, "Brett", items[0].First)
+	assert.Equal(t, "", items[0].Last)
+	assert.Equal(t, "Fred", items[1].First)
+	assert.Equal(t, "", items[1].Last)
+}
+
+
 func setValue(ptr, val interface{}) {
 	reflect.ValueOf(ptr).Elem().Set(reflect.ValueOf(val))
 }

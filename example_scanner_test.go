@@ -32,7 +32,7 @@ func exampleDB() *sql.DB {
 
 func ExampleRow() {
 	db := exampleDB()
-	rows, err := db.Query("SELECT * FROM persons LIMIT 1")
+	rows, err := db.Query("SELECT id,name FROM persons LIMIT 1")
 	if err != nil {
 		panic(err)
 	}
@@ -50,6 +50,28 @@ func ExampleRow() {
 	json.NewEncoder(os.Stdout).Encode(&person)
 	// Output:
 	// {"ID":1,"Name":"brett"}
+}
+
+func ExampleRowStrict() {
+	db := exampleDB()
+	rows, err := db.Query("SELECT id,name FROM persons LIMIT 1")
+	if err != nil {
+		panic(err)
+	}
+
+	var person struct {
+		ID   int
+		Name string `db:"name"`
+	}
+
+	err = scan.RowStrict(&person, rows)
+	if err != nil {
+		panic(err)
+	}
+
+	json.NewEncoder(os.Stdout).Encode(&person)
+	// Output:
+	// {"ID":0,"Name":"brett"}
 }
 
 func ExampleRow_scalar() {
@@ -73,7 +95,7 @@ func ExampleRow_scalar() {
 
 func ExampleRows() {
 	db := exampleDB()
-	rows, err := db.Query("SELECT * FROM persons ORDER BY name")
+	rows, err := db.Query("SELECT id,name FROM persons ORDER BY name")
 	if err != nil {
 		panic(err)
 	}
@@ -91,6 +113,28 @@ func ExampleRows() {
 	json.NewEncoder(os.Stdout).Encode(&persons)
 	// Output:
 	// [{"ID":1,"Name":"brett"},{"ID":2,"Name":"fred"}]
+}
+
+func ExampleRowsStrict() {
+	db := exampleDB()
+	rows, err := db.Query("SELECT id,name FROM persons ORDER BY name")
+	if err != nil {
+		panic(err)
+	}
+
+	var persons []struct {
+		ID   int
+		Name string `db:"name"`
+	}
+
+	err = scan.Rows(&persons, rows)
+	if err != nil {
+		panic(err)
+	}
+
+	json.NewEncoder(os.Stdout).Encode(&persons)
+	// Output:
+	// [{"ID":0,"Name":"brett"},{"ID":0,"Name":"fred"}]
 }
 
 func ExampleRows_primitive() {

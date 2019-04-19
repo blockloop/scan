@@ -64,6 +64,12 @@ fmt.Printf("%d", age)
 // 100
 ```
 
+### Strict Scanning
+
+Both `Rows` and `Row` have strict alternatives to allow scanning to structs _strictly_ based on their `db` tag.
+To avoid unwanted behavior you can use `RowsStrict` or `RowStrict` to scan without using field names.
+Any fields not tagged with the `db` tag will be ignored even if columns are found that match the field names.
+
 ### Columns
 
 `Columns` scans a struct and returns a string slice of the assumed column names based on the `db` tag or the struct field name respectively. To avoid assumptions, use `ColumnsStrict` which will _only_ return the fields tagged with the `db` tag. Both `Columns` and `ColumnsStrict` are variadic. They both accept a string slice of column names to exclude from the list. It is recommended that you cache this slice.

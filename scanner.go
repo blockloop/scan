@@ -13,7 +13,7 @@ import (
 var (
 	// ErrTooManyColumns indicates that a select query returned multiple columns and
 	// attempted to bind to a slice of a primitive type. For example, trying to bind
-	// `select col1, col2 from mytable` to []string
+	// `select col1, col2 from mutable` to []string
 	ErrTooManyColumns = errors.New("too many columns returned for primitive slice")
 
 	// ErrSliceForRow occurs when trying to use Row on a slice
@@ -29,7 +29,17 @@ var (
 // There is no performance impact in using one over the other. QueryRow only
 // defers returning err until Scan is called, which is an unnecessary
 // optimization for this library.
-func Row(v interface{}, rows RowsScanner) error {
+func Row(v interface{}, r RowsScanner) error {
+	return row(v, r, false)
+}
+
+// RowStrict scans a single row into a single variable. It is identical to
+// Row, but it ignores fields that do not have a db tag
+func RowStrict(v interface{}, r RowsScanner) error {
+	return row(v, r, true)
+}
+
+func row(v interface{}, r RowsScanner, strict bool) error {
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
 		return fmt.Errorf("%q must be a pointer", k.String())
@@ -42,7 +52,7 @@ func Row(v interface{}, rows RowsScanner) error {
 	}
 
 	sl := reflect.New(reflect.SliceOf(vType))
-	err := Rows(sl.Interface(), rows)
+	err := rows(sl.Interface(), r, strict)
 	if err != nil {
 		return err
 	}
@@ -59,9 +69,18 @@ func Row(v interface{}, rows RowsScanner) error {
 }
 
 // Rows scans sql rows into a slice (v)
-func Rows(v interface{}, rows RowsScanner) (outerr error) {
+func Rows(v interface{}, r RowsScanner) (outerr error) {
+	return rows(v, r, false)
+}
+
+// RowsStrict scans sql rows into a slice (v) only using db tags
+func RowsStrict(v interface{}, r RowsScanner) (outerr error) {
+	return rows(v, r, true)
+}
+
+func rows(v interface{}, r RowsScanner, strict bool) (outerr error) {
 	if AutoClose {
-		defer closeRows(rows)
+		defer closeRows(r)
 	}
 
 	vType := reflect.TypeOf(v)
@@ -76,14 +95,14 @@ func Rows(v interface{}, rows RowsScanner) (outerr error) {
 	sliceVal := reflect.Indirect(reflect.ValueOf(v))
 	itemType := sliceType.Elem()
 
-	cols, err := rows.Columns()
+	cols, err := r.Columns()
 	if err != nil {
 		return err
 	}
 
 	isPrimitive := itemType.Kind() != reflect.Struct
 
-	for rows.Next() {
+	for r.Next() {
 		sliceItem := reflect.New(itemType).Elem()
 
 		var pointers []interface{}
@@ -93,25 +112,25 @@ func Rows(v interface{}, rows RowsScanner) (outerr error) {
 			}
 			pointers = []interface{}{sliceItem.Addr().Interface()}
 		} else {
-			pointers = structPointers(sliceItem, cols)
+			pointers = structPointers(sliceItem, cols, strict)
 		}
 
 		if len(pointers) == 0 {
 			return nil
 		}
 
-		err := rows.Scan(pointers...)
+		err := r.Scan(pointers...)
 		if err != nil {
 			return err
 		}
 		sliceVal.Set(reflect.Append(sliceVal, sliceItem))
 	}
-	return rows.Err()
+	return r.Err()
 }
 
 // fieldByName gets a struct's field by first looking up the db struct tag and falling
 // back to the field's name in Title case.
-func fieldByName(v reflect.Value, name string) reflect.Value {
+func fieldByName(v reflect.Value, name string, strict bool) reflect.Value {
 	typ := v.Type()
 
 	for i := 0; i < v.NumField(); i++ {
@@ -120,13 +139,16 @@ func fieldByName(v reflect.Value, name string) reflect.Value {
 			return v.Field(i)
 		}
 	}
+	if strict {
+		return reflect.ValueOf(nil)
+	}
 	return v.FieldByName(strings.Title(name))
 }
 
-func structPointers(stct reflect.Value, cols []string) []interface{} {
+func structPointers(stct reflect.Value, cols []string, strict bool) []interface{} {
 	pointers := make([]interface{}, 0, len(cols))
 	for _, colName := range cols {
-		fieldVal := fieldByName(stct, colName)
+		fieldVal := fieldByName(stct, colName, strict)
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
 			// have to add if we found a column because Scan() requires
 			// len(cols) arguments or it will error. This way we can scan to
