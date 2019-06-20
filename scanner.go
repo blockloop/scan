@@ -128,27 +128,34 @@ func rows(v interface{}, r RowsScanner, strict bool) (outerr error) {
 	return r.Err()
 }
 
-// fieldByName gets a struct's field by first looking up the db struct tag and falling
-// back to the field's name in Title case.
-func fieldByName(v reflect.Value, name string, strict bool) reflect.Value {
+// Initialization the tags from struct.
+func initFieldTag(v reflect.Value, len int) map[string]reflect.Value {
+	fieldTagMap := make(map[string]reflect.Value, len)
 	typ := v.Type()
-
 	for i := 0; i < v.NumField(); i++ {
 		tag, ok := typ.Field(i).Tag.Lookup("db")
-		if ok && tag == name {
-			return v.Field(i)
+		if ok && tag != "" {
+			fieldTagMap[tag] = v.Field(i)
 		}
 	}
-	if strict {
-		return reflect.ValueOf(nil)
-	}
-	return v.FieldByName(strings.Title(name))
+	return fieldTagMap
 }
 
 func structPointers(stct reflect.Value, cols []string, strict bool) []interface{} {
 	pointers := make([]interface{}, 0, len(cols))
+
+	fieldTag := initFieldTag(stct, len(cols))
 	for _, colName := range cols {
-		fieldVal := fieldByName(stct, colName, strict)
+		var fieldVal reflect.Value
+		if v, ok := fieldTag[colName]; ok {
+			fieldVal = v
+		} else {
+			if strict{
+				fieldVal = reflect.ValueOf(nil)
+			}else{
+				fieldVal = stct.FieldByName(strings.Title(colName))
+			}
+		}
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
 			// have to add if we found a column because Scan() requires
 			// len(cols) arguments or it will error. This way we can scan to
