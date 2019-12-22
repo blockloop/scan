@@ -10,4 +10,4 @@ test:
 
 .PHONY: lint
 lint:
-	gometalinter -t false ./...
+	golangci-lint run

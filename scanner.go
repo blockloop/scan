@@ -150,9 +150,9 @@ func structPointers(stct reflect.Value, cols []string, strict bool) []interface{
 		if v, ok := fieldTag[colName]; ok {
 			fieldVal = v
 		} else {
-			if strict{
+			if strict {
 				fieldVal = reflect.ValueOf(nil)
-			}else{
+			} else {
 				fieldVal = stct.FieldByName(strings.Title(colName))
 			}
 		}
