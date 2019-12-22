@@ -1,6 +1,6 @@
 // +build integration
 
-package scan_test
+package integration
 
 import (
 	"testing"
