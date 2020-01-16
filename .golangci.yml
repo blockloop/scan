@@ -35,6 +35,7 @@ linters:
     - prealloc
     - gochecknoglobals
     - wsl
+    - gomnd
 
 issues:
   exclude-use-default: false

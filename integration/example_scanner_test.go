@@ -1,4 +1,4 @@
-package scan_test
+package integration
 
 import (
 	"database/sql"
