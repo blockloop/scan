@@ -1,13 +1,15 @@
 # github.com/davecgh/go-spew v1.1.0
 github.com/davecgh/go-spew/spew
-# github.com/mattn/go-sqlite3 v1.13.0
-## explicit
-github.com/mattn/go-sqlite3
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/stretchr/testify v1.5.1
-## explicit
+# github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244
+github.com/proullon/ramsql/driver
+github.com/proullon/ramsql/engine
+github.com/proullon/ramsql/engine/log
+github.com/proullon/ramsql/engine/parser
+github.com/proullon/ramsql/engine/protocol
+# github.com/stretchr/testify v1.6.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# gopkg.in/yaml.v2 v2.2.2
-gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3
