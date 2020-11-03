@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"reflect"
 	"strings"
 )
@@ -171,7 +170,5 @@ func structPointers(stct reflect.Value, cols []string, strict bool) []interface{
 }
 
 func closeRows(c io.Closer) {
-	if err := c.Close(); err != nil {
-		log.Printf("failed to close rows: %+v\n", err)
-	}
+	_ = c.Close()
 }
