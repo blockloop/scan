@@ -15,7 +15,7 @@ func Values(cols []string, v interface{}) ([]interface{}, error) {
 	vals := make([]interface{}, len(cols))
 	model, err := reflectValue(v)
 	if err != nil {
-		return nil, fmt.Errorf("values: %v", err)
+		return nil, fmt.Errorf("values: %w", err)
 	}
 
 	fields := loadFields(model)
@@ -23,7 +23,7 @@ func Values(cols []string, v interface{}) ([]interface{}, error) {
 	for i, col := range cols {
 		j, ok := fields[col]
 		if !ok {
-			return nil, fmt.Errorf("field %T.%q either does not exist or is unexported", v, col)
+			return nil, fmt.Errorf("field %T.%q either does not exist or is unexported: %w", v, col, ErrStructFieldMissing)
 		}
 
 		vals[i] = model.Field(j).Interface()

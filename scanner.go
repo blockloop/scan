@@ -42,7 +42,7 @@ func RowStrict(v interface{}, r RowsScanner) error {
 func row(v interface{}, r RowsScanner, strict bool) error {
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
-		return fmt.Errorf("%q must be a pointer", k.String())
+		return fmt.Errorf("%q must be a pointer: %w", k.String(), ErrNotAPointer)
 	}
 
 	vType = vType.Elem()
@@ -85,11 +85,11 @@ func rows(v interface{}, r RowsScanner, strict bool) (outerr error) {
 
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
-		return fmt.Errorf("%q must be a pointer", k.String())
+		return fmt.Errorf("%q must be a pointer: %w", k.String(), ErrNotAPointer)
 	}
 	sliceType := vType.Elem()
 	if reflect.Slice != sliceType.Kind() {
-		return fmt.Errorf("%q must be a slice", sliceType.String())
+		return fmt.Errorf("%q must be a slice: %w", sliceType.String(), ErrNotASlicePointer)
 	}
 
 	sliceVal := reflect.Indirect(reflect.ValueOf(v))
