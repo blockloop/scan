@@ -31,6 +31,8 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    - godot
+    - goerr113
     - maligned
     - prealloc
     - gochecknoglobals
