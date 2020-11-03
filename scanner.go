@@ -21,6 +21,10 @@ var (
 	// AutoClose is true when scan should automatically close Scanner when the scan
 	// is complete. If you set it to false, then you must defer rows.Close() manually
 	AutoClose = true
+
+	// OnAutoCloseError can be used to log errors which are returned from rows.Close()
+	// By default this is a NOOP function
+	OnAutoCloseError = func(error) {}
 )
 
 // Row scans a single row into a single variable. It requires that you use
@@ -170,5 +174,9 @@ func structPointers(stct reflect.Value, cols []string, strict bool) []interface{
 }
 
 func closeRows(c io.Closer) {
-	_ = c.Close()
+	if err := c.Close(); err != nil {
+		if OnAutoCloseError != nil {
+			OnAutoCloseError(err)
+		}
+	}
 }

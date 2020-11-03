@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/blockloop/scan"
@@ -297,6 +298,25 @@ func TestRowsStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	assert.Equal(t, "", items[1].Last)
 }
 
+func Test_OnAutoCloseErrorIsCalledWhenRowsCloseErrors(t *testing.T) {
+	expected := sql.ErrTxDone
+	calls := int32(0)
+
+	scan.OnAutoCloseError = func(err error) {
+		assert.Equal(t, expected, err)
+		atomic.AddInt32(&calls, 1)
+	}
+
+	rows := fakeRowsWithRecords(t, []string{"name"},
+		[]interface{}{"Bob"},
+	)
+
+	rows.CloseReturns(expected)
+
+	var name string
+	assert.NoError(t, scan.Row(&name, rows))
+	assert.EqualValues(t, 1, calls)
+}
 
 func setValue(ptr, val interface{}) {
 	reflect.ValueOf(ptr).Elem().Set(reflect.ValueOf(val))
