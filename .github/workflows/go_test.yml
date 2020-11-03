@@ -37,4 +37,3 @@ jobs:
       with:
         path-to-profile: .coverprofile
         flag-name: Go-${{ matrix.go }}
-        parallel: yes
