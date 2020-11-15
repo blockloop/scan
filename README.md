@@ -1,6 +1,7 @@
 # Scan
 
 [![GoDoc](https://godoc.org/github.com/blockloop/scan?status.svg)](https://godoc.org/github.com/blockloop/scan)
+[![go test](https://github.com/blockloop/scan/workflows/go%20test/badge.svg)](https://github.com/blockloop/scan/actions)
 [![Coveralls github](https://img.shields.io/coveralls/github/blockloop/scan.svg)](https://coveralls.io/github/blockloop/scan)
 [![Report Card](https://goreportcard.com/badge/github.com/blockloop/scan)](https://goreportcard.com/report/github.com/blockloop/scan)
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=blockloop/scan)](https://dependabot.com)
