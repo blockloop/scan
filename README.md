@@ -14,8 +14,8 @@ For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org
 
 ### Multiple Rows
 ```go
-db, _ := sql.Open("sqlite3", "database.sqlite")
-rows, _ := db.Query("SELECT * FROM persons")
+db, err := sql.Open("sqlite3", "database.sqlite")
+rows, err := db.Query("SELECT * FROM persons")
 
 var persons []Person
 err := scan.Rows(&persons, rows)
@@ -30,7 +30,7 @@ fmt.Printf("%#v", persons)
 ### Multiple rows of primitive type
 
 ```go
-rows, _ := db.Query("SELECT name FROM persons")
+rows, err := db.Query("SELECT name FROM persons")
 var names []string
 err := scan.Rows(&names, rows)
 
@@ -45,7 +45,7 @@ fmt.Printf("%#v", names)
 ### Single row
 
 ```go
-rows, _ := db.Query("SELECT * FROM persons where name = 'brett' LIMIT 1")
+rows, err := db.Query("SELECT * FROM persons where name = 'brett' LIMIT 1")
 var person Person
 err := scan.Row(&person, rows)
 
@@ -56,7 +56,7 @@ fmt.Printf("%#v", person)
 ### Scalar value
 
 ```go
-rows, _ := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
+rows, err := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
 var age int8
 err := scan.Row(&age, row)
 
