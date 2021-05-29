@@ -7,7 +7,7 @@
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=blockloop/scan)](https://dependabot.com)
 
 
-Scan provides the ability to use database/sql/rows to scan datasets directly to structs or slices. 
+Scan standard lib database rows directly to structs or slices. 
 For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org/github.com/blockloop/scan)
 
 ## Examples
