@@ -278,6 +278,39 @@ func TestRowStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	assert.Equal(t, "", item.Last)
 }
 
+func TestRowScansNestedFields(t *testing.T) {
+	rows := fakeRowsWithRecords(t, []string{"p.First", "p.Last"},
+		[]interface{}{"Brett", "Jones"},
+	)
+
+	var res struct {
+		Item struct {
+			First string `db:"p.First"`
+			Last  string `db:"p.Last"`
+		}
+	}
+
+	require.NoError(t, scan.Row(&res, rows))
+	assert.Equal(t, "Brett", res.Item.First)
+	assert.Equal(t, "Jones", res.Item.Last)
+}
+
+func TestRowStrictScansNestedFields(t *testing.T) {
+	rows := fakeRowsWithRecords(t, []string{"p.First", "p.Last"},
+		[]interface{}{"Brett", "Jones"},
+	)
+
+	var res struct {
+		Item struct {
+			First string `db:"p.First"`
+			Last  string `db:"p.Last"`
+		}
+	}
+
+	require.NoError(t, scan.RowStrict(&res, rows))
+	assert.Equal(t, "Brett", res.Item.First)
+	assert.Equal(t, "Jones", res.Item.Last)
+}
 func TestRowsStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	rows := fakeRowsWithRecords(t, []string{"First", "Last"},
 		[]interface{}{"Brett", "Jones"},

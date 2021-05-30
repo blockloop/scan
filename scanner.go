@@ -132,22 +132,26 @@ func rows(v interface{}, r RowsScanner, strict bool) (outerr error) {
 }
 
 // Initialization the tags from struct.
-func initFieldTag(v reflect.Value, len int) map[string]reflect.Value {
-	fieldTagMap := make(map[string]reflect.Value, len)
-	typ := v.Type()
-	for i := 0; i < v.NumField(); i++ {
+func initFieldTag(sliceItem reflect.Value, fieldTagMap *map[string]reflect.Value) {
+	typ := sliceItem.Type()
+	for i := 0; i < sliceItem.NumField(); i++ {
+		if typ.Field(i).Anonymous || typ.Field(i).Type.Kind() == reflect.Struct {
+			// found an embedded struct
+			sliceItemOfAnonymous := sliceItem.Field(i)
+			initFieldTag(sliceItemOfAnonymous, fieldTagMap)
+		}
 		tag, ok := typ.Field(i).Tag.Lookup("db")
 		if ok && tag != "" {
-			fieldTagMap[tag] = v.Field(i)
+			(*fieldTagMap)[tag] = sliceItem.Field(i)
 		}
 	}
-	return fieldTagMap
 }
 
-func structPointers(stct reflect.Value, cols []string, strict bool) []interface{} {
+func structPointers(sliceItem reflect.Value, cols []string, strict bool) []interface{} {
 	pointers := make([]interface{}, 0, len(cols))
+	fieldTag := make(map[string]reflect.Value, len(cols))
+	initFieldTag(sliceItem, &fieldTag)
 
-	fieldTag := initFieldTag(stct, len(cols))
 	for _, colName := range cols {
 		var fieldVal reflect.Value
 		if v, ok := fieldTag[colName]; ok {
@@ -156,7 +160,7 @@ func structPointers(stct reflect.Value, cols []string, strict bool) []interface{
 			if strict {
 				fieldVal = reflect.ValueOf(nil)
 			} else {
-				fieldVal = stct.FieldByName(strings.Title(colName))
+				fieldVal = sliceItem.FieldByName(strings.Title(colName))
 			}
 		}
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
