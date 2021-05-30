@@ -31,8 +31,8 @@ func exampleDB() *sql.DB {
 		id INTEGER NOT NULL,
 		name VARCHAR(120)
 	);`,
-	`INSERT INTO persons (id, name) VALUES (1, 'brett');`,
-	`INSERT INTO persons (id, name) VALUES (2, 'fred');`,
+		`INSERT INTO persons (id, name) VALUES (1, 'brett');`,
+		`INSERT INTO persons (id, name) VALUES (2, 'fred');`,
 	)
 }
 

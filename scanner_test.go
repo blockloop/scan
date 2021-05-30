@@ -278,7 +278,6 @@ func TestRowStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	assert.Equal(t, "", item.Last)
 }
 
-
 func TestRowsStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	rows := fakeRowsWithRecords(t, []string{"First", "Last"},
 		[]interface{}{"Brett", "Jones"},

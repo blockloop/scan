@@ -13,3 +13,6 @@ test:
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run
+
+fmt: $(GOFUMPT)
+	$(GOFUMPT) -w $(GOFILES)
