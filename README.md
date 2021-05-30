@@ -64,6 +64,31 @@ fmt.Printf("%d", age)
 // 100
 ```
 
+### Nested Struct Fields (as of v2.0.0)
+```
+rows, err := db.Query(`
+	SELECT person.id,person.name,company.name FROM person
+	JOIN company on company.id = person.company_id
+	LIMIT 1
+`)
+
+var person struct {
+	ID      int    `db:"person.id"`
+	Name    string `db:"person.name"`
+	Company struct {
+		Name string `db:"company.name"`
+	}
+}
+
+err = scan.RowStrict(&person, rows)
+
+err = json.NewEncoder(os.Stdout).Encode(&person)
+// Output:
+// {"ID":1,"Name":"brett","Company":{"Name":"costco"}}
+```
+
+
+
 ### Strict Scanning
 
 Both `Rows` and `Row` have strict alternatives to allow scanning to structs _strictly_ based on their `db` tag.

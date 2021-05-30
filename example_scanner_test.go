@@ -27,19 +27,37 @@ func mustDB(name string, queries ...string) *sql.DB {
 }
 
 func exampleDB() *sql.DB {
-	return mustDB(fmt.Sprintf("%d", rand.Uint64()), `CREATE TABLE persons (
+	return mustDB(fmt.Sprintf("%d", rand.Uint64()), `CREATE TABLE person (
 		id INTEGER NOT NULL,
 		name VARCHAR(120)
 	);`,
-		`INSERT INTO persons (id, name) VALUES (1, 'brett');`,
-		`INSERT INTO persons (id, name) VALUES (2, 'fred');`,
+		`INSERT INTO person (id, name) VALUES (1, 'brett', 1);`,
+		`INSERT INTO person (id, name) VALUES (2, 'fred', 1);`,
+	)
+}
+
+func exampleNestedDB() *sql.DB {
+	return mustDB(fmt.Sprintf("%d", rand.Uint64()), `
+	CREATE TABLE IF NOT EXISTS person (
+		id INT NOT NULL,
+		name VARCHAR(120),
+		company_id INT
+	);`,
+		`CREATE TABLE IF NOT EXISTS company (
+		id INTEGER NOT NULL,
+		name VARCHAR(120)
+	);
+	`,
+		`INSERT INTO person (id, name, company_id) VALUES (1, 'brett', 1);`,
+		`INSERT INTO person (id, name, company_id) VALUES (2, 'fred', 1);`,
+		`INSERT INTO company (id, name) VALUES (1, 'costco');`,
 	)
 }
 
 func ExampleRow() {
 	db := exampleDB()
 	defer db.Close()
-	rows, err := db.Query("SELECT id,name FROM persons LIMIT 1")
+	rows, err := db.Query("SELECT id,name FROM person LIMIT 1")
 	if err != nil {
 		panic(err)
 	}
@@ -62,10 +80,43 @@ func ExampleRow() {
 	// {"ID":1,"Name":"brett"}
 }
 
+func ExampleRowNested() {
+	db := exampleNestedDB()
+	defer db.Close()
+	rows, err := db.Query(`
+		SELECT person.id,person.name,company.name FROM person
+		JOIN company on company.id = person.company_id
+		LIMIT 1
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	var person struct {
+		ID      int    `db:"person.id"`
+		Name    string `db:"person.name"`
+		Company struct {
+			Name string `db:"company.name"`
+		}
+	}
+
+	err = scan.RowStrict(&person, rows)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.NewEncoder(os.Stdout).Encode(&person)
+	if err != nil {
+		panic(err)
+	}
+	// Output:
+	// {"ID":1,"Name":"brett","Company":{"Name":"costco"}}
+}
+
 func ExampleRowStrict() {
 	db := exampleDB()
 	defer db.Close()
-	rows, err := db.Query("SELECT id,name FROM persons LIMIT 1")
+	rows, err := db.Query("SELECT id,name FROM person LIMIT 1")
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +139,7 @@ func ExampleRowStrict() {
 func ExampleRow_scalar() {
 	db := exampleDB()
 	defer db.Close()
-	rows, err := db.Query("SELECT name FROM persons LIMIT 1")
+	rows, err := db.Query("SELECT name FROM person LIMIT 1")
 	if err != nil {
 		panic(err)
 	}
@@ -108,7 +159,7 @@ func ExampleRow_scalar() {
 func ExampleRows() {
 	db := exampleDB()
 	defer db.Close()
-	rows, err := db.Query("SELECT id,name FROM persons ORDER BY id ASC")
+	rows, err := db.Query("SELECT id,name FROM person ORDER BY id ASC")
 	if err != nil {
 		panic(err)
 	}
@@ -131,7 +182,7 @@ func ExampleRows() {
 func ExampleRowsStrict() {
 	db := exampleDB()
 	defer db.Close()
-	rows, err := db.Query("SELECT id,name FROM persons ORDER BY id ASC")
+	rows, err := db.Query("SELECT id,name FROM person ORDER BY id ASC")
 	if err != nil {
 		panic(err)
 	}
@@ -154,7 +205,7 @@ func ExampleRowsStrict() {
 func ExampleRows_primitive() {
 	db := exampleDB()
 	defer db.Close()
-	rows, err := db.Query("SELECT name FROM persons ORDER BY id ASC")
+	rows, err := db.Query("SELECT name FROM person ORDER BY id ASC")
 	if err != nil {
 		panic(err)
 	}
