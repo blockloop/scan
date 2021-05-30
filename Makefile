@@ -1,3 +1,5 @@
+include .bingo/Variables.mk
+
 GOFILES=$(shell find . -type f -iname '*.go')
 
 .PHONY: build
@@ -9,5 +11,5 @@ test:
 	go test -tags=integration ./...
 
 .PHONY: lint
-lint:
-	golangci-lint run
+lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run
