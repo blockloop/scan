@@ -47,9 +47,8 @@ func fakeRowsWithRecords(t testing.TB, cols []string, rows ...[]interface{}) *Fa
 type FakeRowsScanner struct {
 	CloseStub        func() error
 	closeMutex       sync.RWMutex
-	closeArgsForCall []struct {
-	}
-	closeReturns struct {
+	closeArgsForCall []struct{}
+	closeReturns     struct {
 		result1 error
 	}
 	closeReturnsOnCall map[int]struct {
@@ -57,9 +56,8 @@ type FakeRowsScanner struct {
 	}
 	ColumnTypesStub        func() ([]*sql.ColumnType, error)
 	columnTypesMutex       sync.RWMutex
-	columnTypesArgsForCall []struct {
-	}
-	columnTypesReturns struct {
+	columnTypesArgsForCall []struct{}
+	columnTypesReturns     struct {
 		result1 []*sql.ColumnType
 		result2 error
 	}
@@ -69,9 +67,8 @@ type FakeRowsScanner struct {
 	}
 	ColumnsStub        func() ([]string, error)
 	columnsMutex       sync.RWMutex
-	columnsArgsForCall []struct {
-	}
-	columnsReturns struct {
+	columnsArgsForCall []struct{}
+	columnsReturns     struct {
 		result1 []string
 		result2 error
 	}
@@ -81,9 +78,8 @@ type FakeRowsScanner struct {
 	}
 	ErrStub        func() error
 	errMutex       sync.RWMutex
-	errArgsForCall []struct {
-	}
-	errReturns struct {
+	errArgsForCall []struct{}
+	errReturns     struct {
 		result1 error
 	}
 	errReturnsOnCall map[int]struct {
@@ -91,9 +87,8 @@ type FakeRowsScanner struct {
 	}
 	NextStub        func() bool
 	nextMutex       sync.RWMutex
-	nextArgsForCall []struct {
-	}
-	nextReturns struct {
+	nextArgsForCall []struct{}
+	nextReturns     struct {
 		result1 bool
 	}
 	nextReturnsOnCall map[int]struct {
@@ -117,8 +112,7 @@ type FakeRowsScanner struct {
 func (fake *FakeRowsScanner) Close() error {
 	fake.closeMutex.Lock()
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
-	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
-	}{})
+	fake.closeArgsForCall = append(fake.closeArgsForCall, struct{}{})
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
@@ -169,8 +163,7 @@ func (fake *FakeRowsScanner) CloseReturnsOnCall(i int, result1 error) {
 func (fake *FakeRowsScanner) ColumnTypes() ([]*sql.ColumnType, error) {
 	fake.columnTypesMutex.Lock()
 	ret, specificReturn := fake.columnTypesReturnsOnCall[len(fake.columnTypesArgsForCall)]
-	fake.columnTypesArgsForCall = append(fake.columnTypesArgsForCall, struct {
-	}{})
+	fake.columnTypesArgsForCall = append(fake.columnTypesArgsForCall, struct{}{})
 	fake.recordInvocation("ColumnTypes", []interface{}{})
 	fake.columnTypesMutex.Unlock()
 	if fake.ColumnTypesStub != nil {
@@ -224,8 +217,7 @@ func (fake *FakeRowsScanner) ColumnTypesReturnsOnCall(i int, result1 []*sql.Colu
 func (fake *FakeRowsScanner) Columns() ([]string, error) {
 	fake.columnsMutex.Lock()
 	ret, specificReturn := fake.columnsReturnsOnCall[len(fake.columnsArgsForCall)]
-	fake.columnsArgsForCall = append(fake.columnsArgsForCall, struct {
-	}{})
+	fake.columnsArgsForCall = append(fake.columnsArgsForCall, struct{}{})
 	fake.recordInvocation("Columns", []interface{}{})
 	fake.columnsMutex.Unlock()
 	if fake.ColumnsStub != nil {
@@ -279,8 +271,7 @@ func (fake *FakeRowsScanner) ColumnsReturnsOnCall(i int, result1 []string, resul
 func (fake *FakeRowsScanner) Err() error {
 	fake.errMutex.Lock()
 	ret, specificReturn := fake.errReturnsOnCall[len(fake.errArgsForCall)]
-	fake.errArgsForCall = append(fake.errArgsForCall, struct {
-	}{})
+	fake.errArgsForCall = append(fake.errArgsForCall, struct{}{})
 	fake.recordInvocation("Err", []interface{}{})
 	fake.errMutex.Unlock()
 	if fake.ErrStub != nil {
@@ -331,8 +322,7 @@ func (fake *FakeRowsScanner) ErrReturnsOnCall(i int, result1 error) {
 func (fake *FakeRowsScanner) Next() bool {
 	fake.nextMutex.Lock()
 	ret, specificReturn := fake.nextReturnsOnCall[len(fake.nextArgsForCall)]
-	fake.nextArgsForCall = append(fake.nextArgsForCall, struct {
-	}{})
+	fake.nextArgsForCall = append(fake.nextArgsForCall, struct{}{})
 	fake.recordInvocation("Next", []interface{}{})
 	fake.nextMutex.Unlock()
 	if fake.NextStub != nil {
