@@ -65,7 +65,7 @@ fmt.Printf("%d", age)
 ```
 
 ### Nested Struct Fields (as of v2.0.0)
-```
+```go
 rows, err := db.Query(`
 	SELECT person.id,person.name,company.name FROM person
 	JOIN company on company.id = person.company_id
