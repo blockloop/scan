@@ -56,7 +56,7 @@ fmt.Printf("%#v", person)
 ```go
 rows, err := db.Query("SELECT age FROM persons where name = 'brett' LIMIT 1")
 var age int8
-err := scan.Row(&age, row)
+err := scan.Row(&age, rows)
 
 fmt.Printf("%d", age)
 // 100
