@@ -1,15 +1,34 @@
 # github.com/davecgh/go-spew v1.1.1
+## explicit
 github.com/davecgh/go-spew/spew
+# github.com/kr/pretty v0.2.1
+## explicit; go 1.12
 # github.com/pmezard/go-difflib v1.0.0
+## explicit
 github.com/pmezard/go-difflib/difflib
 # github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244
+## explicit
 github.com/proullon/ramsql/driver
 github.com/proullon/ramsql/engine
 github.com/proullon/ramsql/engine/log
 github.com/proullon/ramsql/engine/parser
 github.com/proullon/ramsql/engine/protocol
 # github.com/stretchr/testify v1.7.1
+## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# golang.org/x/text v0.3.3
+## explicit; go 1.11
+golang.org/x/text/cases
+golang.org/x/text/internal
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/tag
+golang.org/x/text/language
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
+# gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
+## explicit
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+## explicit
 gopkg.in/yaml.v3

@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var (
@@ -160,7 +162,7 @@ func structPointers(sliceItem reflect.Value, cols []string, strict bool) []inter
 			if strict {
 				fieldVal = reflect.ValueOf(nil)
 			} else {
-				fieldVal = sliceItem.FieldByName(strings.Title(colName))
+				fieldVal = sliceItem.FieldByName(cases.Title(language.English).String(colName))
 			}
 		}
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
