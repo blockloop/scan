@@ -54,7 +54,24 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 	}
 
 	if cache, ok := columnsCache.Load(model); ok {
-		return cache.([]string), nil
+		cached := cache.([]string)
+		res := make([]string, 0, len(cached))
+
+		keep := func(k string) bool {
+			for _, c := range excluded {
+				if c == k {
+					return false
+				}
+			}
+			return true
+		}
+
+		for _, k := range cached {
+			if keep(k) {
+				res = append(res, k)
+			}
+		}
+		return res, nil
 	}
 
 	numfield := model.NumField()
@@ -94,7 +111,8 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 		names = append(names, typeField.Name)
 	}
 
-	columnsCache.Store(model, names)
+	toCache := append(names, excluded...)
+	columnsCache.Store(model, toCache)
 	return names, nil
 }
 
