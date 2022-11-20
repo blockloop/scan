@@ -98,6 +98,42 @@ func TestColumnsExcludesFields(t *testing.T) {
 	assert.EqualValues(t, []string{"age"}, cols)
 }
 
+func TestColumnsExcludesFieldsFromCache(t *testing.T) {
+	type person struct {
+		Name string `db:"name"`
+		Age  int    `db:"age"`
+	}
+
+	// Create the cache first
+	thing := &person{}
+	cols1, err := Columns(thing)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"name", "age"}, cols1)
+
+	// verify that all cached fields aren't returned
+	cols2, err := Columns(thing, "age")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"name"}, cols2)
+}
+
+func TestColumnsIncludesFieldsCachedFromFirstExclude(t *testing.T) {
+	type person struct {
+		Name string `db:"name"`
+		Age  int    `db:"age"`
+	}
+
+	// Create the cache first
+	thing := &person{}
+	cols1, err := Columns(thing, "age")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"name"}, cols1)
+
+	// verify that all fields are returned
+	cols2, err := Columns(thing)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"name", "age"}, cols2)
+}
+
 func TestColumnsStrictExcludesUntaggedFields(t *testing.T) {
 	type person struct {
 		Name string `db:"name"`
