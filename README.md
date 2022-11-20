@@ -154,18 +154,19 @@ While many other projects support similar features (i.e. [sqlx](https://github.c
 ## Benchmarks 
 
 ```
-λ go test -bench=. -benchtime=10s ./...
+$ go test -bench=. -benchtime=10s ./...
 goos: linux
 goarch: amd64
 pkg: github.com/blockloop/scan
-BenchmarkColumnsLargeStruct-8           50000000               272 ns/op
-BenchmarkValuesLargeStruct-8             2000000              8611 ns/op
-BenchmarkScanRowOneField-8               2000000              8528 ns/op
-BenchmarkScanRowFiveFields-8             1000000             12234 ns/op
-BenchmarkScanTenRowsOneField-8           1000000             16802 ns/op
-BenchmarkScanTenRowsTenFields-8           100000            104587 ns/op
+cpu: 11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz
+BenchmarkColumnsLargeStruct-8           41527964               288.0 ns/op
+BenchmarkValuesLargeStruct-8             6816885              1807 ns/op
+BenchmarkScanRowOneField-8               5686971              2074 ns/op
+BenchmarkScanRowFiveFields-8             4962622              2381 ns/op
+BenchmarkScanTenRowsOneField-8           1537761              8598 ns/op
+BenchmarkScanTenRowsTenFields-8           322106             50431 ns/op
 PASS
-ok      github.com/blockloop/scan       116.055s
+ok      github.com/blockloop/scan       92.374s
 ```
 
 
