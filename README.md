@@ -8,6 +8,10 @@
 Scan standard lib database rows directly to structs or slices. 
 For the most comprehensive and up-to-date docs see the [godoc](https://godoc.org/github.com/blockloop/scan)
 
+```go
+import "github.com/blockloop/scan/v2"
+```
+
 ## Examples
 
 ### Multiple Rows
