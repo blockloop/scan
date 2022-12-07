@@ -3,7 +3,7 @@ package scan_test
 import (
 	"fmt"
 
-	"github.com/blockloop/scan"
+	"github.com/blockloop/scan/v2"
 )
 
 func ExampleValues() {

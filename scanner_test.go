@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/blockloop/scan"
+	"github.com/blockloop/scan/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -311,6 +311,7 @@ func TestRowStrictScansNestedFields(t *testing.T) {
 	assert.Equal(t, "Brett", res.Item.First)
 	assert.Equal(t, "Jones", res.Item.Last)
 }
+
 func TestRowsStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	rows := fakeRowsWithRecords(t, []string{"First", "Last"},
 		[]interface{}{"Brett", "Jones"},

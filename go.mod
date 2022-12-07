@@ -1,4 +1,4 @@
-module github.com/blockloop/scan
+module github.com/blockloop/scan/v2
 
 go 1.17
 
