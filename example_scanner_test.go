@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/blockloop/scan"
+	"github.com/blockloop/scan/v2"
 	_ "github.com/proullon/ramsql/driver"
 )
 
