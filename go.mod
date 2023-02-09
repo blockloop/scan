@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/text v0.6.0
+	golang.org/x/text v0.7.0
 )
 
 require (
