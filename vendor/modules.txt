@@ -13,7 +13,7 @@ github.com/proullon/ramsql/engine
 github.com/proullon/ramsql/engine/log
 github.com/proullon/ramsql/engine/parser
 github.com/proullon/ramsql/engine/protocol
-# github.com/stretchr/testify v1.8.1
+# github.com/stretchr/testify v1.8.2
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
