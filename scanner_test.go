@@ -331,6 +331,16 @@ func TestRowsStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	assert.Equal(t, "", items[1].Last)
 }
 
+func TestRowCloses(t *testing.T) {
+	rows := fakeRowsWithRecords(t, []string{"name"},
+		[]interface{}{"Bob"},
+	)
+
+	var name string
+	assert.NoError(t, scan.Row(&name, rows))
+	assert.EqualValues(t, 1, rows.CloseCallCount())
+}
+
 func Test_OnAutoCloseErrorIsCalledWhenRowsCloseErrors(t *testing.T) {
 	expected := sql.ErrTxDone
 	calls := int32(0)
