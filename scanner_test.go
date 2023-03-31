@@ -331,13 +331,14 @@ func TestRowsStrictIgnoresFieldsWithoutDBTag(t *testing.T) {
 	assert.Equal(t, "", items[1].Last)
 }
 
-func TestRowCloses(t *testing.T) {
+func TestRowClosesEarly(t *testing.T) {
 	rows := fakeRowsWithRecords(t, []string{"name"},
 		[]interface{}{"Bob"},
 	)
 
 	var name string
-	assert.NoError(t, scan.Row(&name, rows))
+	// dont' pass a pointer to cause an early error
+	assert.Error(t, scan.Row(name, rows))
 	assert.EqualValues(t, 1, rows.CloseCallCount())
 }
 

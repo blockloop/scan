@@ -35,12 +35,20 @@ var (
 // defers returning err until Scan is called, which is an unnecessary
 // optimization for this library.
 func Row(v interface{}, r RowsScanner) error {
+	if AutoClose {
+		defer closeRows(r)
+	}
+
 	return row(v, r, false)
 }
 
 // RowStrict scans a single row into a single variable. It is identical to
 // Row, but it ignores fields that do not have a db tag
 func RowStrict(v interface{}, r RowsScanner) error {
+	if AutoClose {
+		defer closeRows(r)
+	}
+
 	return row(v, r, true)
 }
 
@@ -75,19 +83,23 @@ func row(v interface{}, r RowsScanner, strict bool) error {
 
 // Rows scans sql rows into a slice (v)
 func Rows(v interface{}, r RowsScanner) (outerr error) {
+	if AutoClose {
+		defer closeRows(r)
+	}
+
 	return rows(v, r, false)
 }
 
 // RowsStrict scans sql rows into a slice (v) only using db tags
 func RowsStrict(v interface{}, r RowsScanner) (outerr error) {
-	return rows(v, r, true)
-}
-
-func rows(v interface{}, r RowsScanner, strict bool) (outerr error) {
 	if AutoClose {
 		defer closeRows(r)
 	}
 
+	return rows(v, r, true)
+}
+
+func rows(v interface{}, r RowsScanner, strict bool) (outerr error) {
 	vType := reflect.TypeOf(v)
 	if k := vType.Kind(); k != reflect.Ptr {
 		return fmt.Errorf("%q must be a pointer: %w", k.String(), ErrNotAPointer)
