@@ -123,6 +123,8 @@ func selectExecutor(e *Engine, selectDecl *parser.Decl, conn protocol.EngineConn
 				return fmt.Errorf("wrong offset value: %s", err)
 			}
 			conn = offsetedConn(conn, offset)
+		case parser.DistinctToken:
+			conn = distinctedConn(conn, len(selectDecl.Decl[i].Decl))
 		}
 	}
 
@@ -143,7 +145,7 @@ func selectExecutor(e *Engine, selectDecl *parser.Decl, conn protocol.EngineConn
 	}
 
 	if len(functors) == 0 {
-		// Instanciate a new select functor
+		// Instantiate a new select functor
 		functors, err = getSelectFunctors(selectDecl)
 		if err != nil {
 			return err
@@ -164,7 +166,7 @@ type selectFunctor interface {
 	Done() error
 }
 
-// getSelectFunctors instanciate new functors for COUNT, MAX, MIN, AVG, ... and default select functor that return rows to client
+// getSelectFunctors instantiate new functors for COUNT, MAX, MIN, AVG, ... and default select functor that return rows to client
 // If a functor is specified, no attribute can be selected ?
 func getSelectFunctors(attr *parser.Decl) ([]selectFunctor, error) {
 	var functors []selectFunctor
@@ -275,6 +277,22 @@ func inExecutor(inDecl *parser.Decl, p *Predicate) error {
 	return nil
 }
 
+func notInExecutor(inDecl *parser.Decl, p *Predicate) error {
+	inDecl.Stringy(0)
+
+	p.Operator = notInOperator
+
+	// Put everything in a []string
+	var values []string
+	for i := range inDecl.Decl {
+		log.Debug("notIinExecutor: Appending [%s]", inDecl.Decl[i].Lexeme)
+		values = append(values, inDecl.Decl[i].Lexeme)
+	}
+	p.RightValue.v = values
+
+	return nil
+}
+
 func isExecutor(isDecl *parser.Decl, p *Predicate) error {
 	isDecl.Stringy(0)
 
@@ -363,7 +381,7 @@ func whereExecutor2(e *Engine, decl []*parser.Decl, fromTableName string) (Predi
 	}
 
 	switch cond.Decl[0].Token {
-	case parser.IsToken, parser.InToken, parser.EqualityToken, parser.LeftDipleToken, parser.RightDipleToken, parser.LessOrEqualToken, parser.GreaterOrEqualToken:
+	case parser.IsToken, parser.InToken, parser.EqualityToken, parser.DistinctnessToken, parser.LeftDipleToken, parser.RightDipleToken, parser.LessOrEqualToken, parser.GreaterOrEqualToken:
 		break
 	default:
 		fromTableName = cond.Decl[0].Lexeme
@@ -380,6 +398,16 @@ func whereExecutor2(e *Engine, decl []*parser.Decl, fromTableName string) (Predi
 	// Handle IN keyword
 	if cond.Decl[0].Token == parser.InToken {
 		err := inExecutor(cond.Decl[0], p)
+		if err != nil {
+			return nil, err
+		}
+		p.LeftValue.table = fromTableName
+		return p, nil
+	}
+
+	// Handle NOT IN keywords
+	if cond.Decl[0].Token == parser.NotToken && cond.Decl[0].Decl[0].Token == parser.InToken {
+		err := notInExecutor(cond.Decl[0].Decl[0], p)
 		if err != nil {
 			return nil, err
 		}
@@ -444,11 +472,14 @@ func whereExecutor(whereDecl *parser.Decl, fromTableName string) ([]Predicate, e
 		}
 
 		switch cond.Decl[0].Token {
-		case parser.EqualityToken, parser.LeftDipleToken, parser.RightDipleToken, parser.LessOrEqualToken, parser.GreaterOrEqualToken:
-			log.Debug("whereExecutor: it's = < > <= >=\n")
+		case parser.EqualityToken, parser.DistinctnessToken, parser.LeftDipleToken, parser.RightDipleToken, parser.LessOrEqualToken, parser.GreaterOrEqualToken:
+			log.Debug("whereExecutor: it's = <> < > <= >=\n")
 			break
 		case parser.InToken:
 			log.Debug("whereExecutor: it's IN\n")
+			break
+		case parser.NotToken:
+			log.Debug("whereExecutor: it's NOT\n")
 			break
 		case parser.IsToken:
 			log.Debug("whereExecutor: it's IS token\n")
@@ -466,6 +497,17 @@ func whereExecutor(whereDecl *parser.Decl, fromTableName string) ([]Predicate, e
 		// Handle IN keyword
 		if cond.Decl[0].Token == parser.InToken {
 			err := inExecutor(cond.Decl[0], &p)
+			if err != nil {
+				return nil, err
+			}
+			p.LeftValue.table = tableName
+			predicates = append(predicates, p)
+			continue
+		}
+
+		// Handle NOT IN keywords
+		if cond.Decl[0].Token == parser.NotToken && cond.Decl[0].Decl[0].Token == parser.InToken {
+			err := notInExecutor(cond.Decl[0].Decl[0], &p)
 			if err != nil {
 				return nil, err
 			}

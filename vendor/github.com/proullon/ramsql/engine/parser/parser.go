@@ -70,8 +70,6 @@ func (p *parser) parse(tokens []Token) ([]Instruction, error) {
 	p.tokenLen = len(tokens)
 	p.index = 0
 	for p.hasNext() {
-		// fmt.Printf("Token index : %d\n", p.index)
-
 		// Found a new instruction
 		if tokens[p.index].Token == SemicolonToken {
 			p.index++
@@ -186,7 +184,7 @@ func (p *parser) parseUpdate() (*Instruction, error) {
 			break
 		}
 
-		attributeDecl, err := p.parseCondition()
+		attributeDecl, err := p.parseAttribution()
 		if err != nil {
 			return nil, err
 		}
@@ -205,6 +203,22 @@ func (p *parser) parseUpdate() (*Instruction, error) {
 	return i, nil
 }
 
+// Parses an INSERT statement.
+//
+// The generated AST is as follows:
+//
+//  |-> "INSERT" (InsertToken)
+//      |-> "INTO" (IntoToken)
+//          |-> table name
+//              |-> column name
+//              |-> (...)
+//      |-> "VALUES" (ValuesToken)
+//          |-> "(" (BracketOpeningToken)
+//              |-> value
+//              |-> (...)
+//          |-> (...)
+//      |-> "RETURNING" (ReturningToken) (optional)
+//          |-> column name
 func (p *parser) parseInsert() (*Instruction, error) {
 	i := &Instruction{}
 
@@ -263,33 +277,45 @@ func (p *parser) parseInsert() (*Instruction, error) {
 	}
 	insertDecl.Add(valuesDecl)
 
-	_, err = p.consumeToken(BracketOpeningToken)
-	if err != nil {
-		return nil, err
-	}
-
-	// should be a list of values for specified attributes
 	for {
-		decl, err := p.parseListElement()
+		openingBracketDecl, err := p.consumeToken(BracketOpeningToken)
 		if err != nil {
 			return nil, err
 		}
-		valuesDecl.Add(decl)
+		valuesDecl.Add(openingBracketDecl)
 
-		if p.is(BracketClosingToken) {
-			p.consumeToken(BracketClosingToken)
-			break
+		// should be a list of values for specified attributes
+		for {
+			decl, err := p.parseListElement()
+			if err != nil {
+				return nil, err
+			}
+			openingBracketDecl.Add(decl)
+
+			if p.is(BracketClosingToken) {
+				p.consumeToken(BracketClosingToken)
+				break
+			}
+
+			_, err = p.consumeToken(CommaToken)
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		_, err = p.consumeToken(CommaToken)
-		if err != nil {
-			return nil, err
+		if p.is(CommaToken) {
+			p.consumeToken(CommaToken)
+			continue
 		}
+
+		break
 	}
 
 	// we may have `returning "something"` here
 	if retDecl, err := p.consumeToken(ReturningToken); err == nil {
 		insertDecl.Add(retDecl)
+
+		// returned attribute
 		attrDecl, err := p.parseAttribute()
 		if err != nil {
 			return nil, err
@@ -338,78 +364,29 @@ func (p *parser) parseOrderBy(selectDecl *Decl) error {
 		return err
 	}
 
-	// parse attribute now
-	attrDecl, err := p.parseAttribute()
-	if err != nil {
-		return err
-	}
-	orderDecl.Add(attrDecl)
-
-	// Parse multiple ordering
-	for p.cur().Token == CommaToken {
-		_, err := p.consumeToken(CommaToken)
-		if err != nil {
-			return nil
-		}
-
+	for {
 		// parse attribute now
 		attrDecl, err := p.parseAttribute()
 		if err != nil {
 			return err
 		}
 		orderDecl.Add(attrDecl)
-	}
 
-	// ASC ? DESC ? nothing ?
-	t := p.cur().Token
-	if t == AscToken || t == DescToken {
-		decl, err := p.consumeToken(AscToken, DescToken)
-		if err != nil {
-			return err
-		}
-		orderDecl.Add(decl)
-	}
-
-	return nil
-}
-
-func (p *parser) parseWhere(selectDecl *Decl) error {
-
-	// May be WHERE  here
-	// Can be ORDER BY if WHERE cause if implicit
-	whereDecl, err := p.consumeToken(WhereToken)
-	if err != nil {
-		return err
-	}
-	selectDecl.Add(whereDecl)
-
-	// Now should be a list of: Attribute and Operator and Value
-	gotClause := false
-	for {
-		if !p.hasNext() && gotClause {
-			break
-		}
-
-		if p.is(OrderToken, LimitToken, ForToken) {
-			break
-		}
-
-		attributeDecl, err := p.parseCondition()
-		if err != nil {
-			return err
-		}
-		whereDecl.Add(attributeDecl)
-
-		if p.is(AndToken, OrToken) {
-			linkDecl, err := p.consumeToken(p.cur().Token)
+		if p.is(AscToken, DescToken) {
+			decl, err := p.consumeToken(AscToken, DescToken)
 			if err != nil {
 				return err
 			}
-			whereDecl.Add(linkDecl)
+			attrDecl.Add(decl)
 		}
 
-		// Got at least one clause
-		gotClause = true
+		if !p.is(CommaToken) {
+			break
+		}
+
+		if _, err = p.consumeToken(CommaToken); err != nil {
+			return nil
+		}
 	}
 
 	return nil
@@ -451,6 +428,7 @@ func (p *parser) parseBuiltinFunc() (*Decl, error) {
 // table.foo
 // table.*
 // "table".foo
+// "table"."foo"
 // foo
 func (p *parser) parseAttribute() (*Decl, error) {
 	quoted := false
@@ -464,7 +442,7 @@ func (p *parser) parseAttribute() (*Decl, error) {
 		}
 	}
 
-	// shoud be a StringToken here
+	// should be a StringToken here
 	// If there is a point after, it's a table name,
 	// if not, it's the attribute
 	if !p.is(StringToken, StarToken) {
@@ -479,7 +457,9 @@ func (p *parser) parseAttribute() (*Decl, error) {
 			return nil, err
 		}
 	}
-	// If no next token,and not quoted, then is was the atribute name
+	quoted = false
+
+	// If no next token, and not quoted, then is was the attribute name
 	if err := p.next(); err != nil {
 		return decl, nil
 	}
@@ -490,12 +470,28 @@ func (p *parser) parseAttribute() (*Decl, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// mayby attribute is quoted as well (see #62)
+		if p.is(DoubleQuoteToken) || p.is(BacktickToken) {
+			quoteToken = p.cur().Token
+			quoted = true
+			if err := p.next(); err != nil {
+				return nil, err
+			}
+		}
 		// if so, next must be the attribute name or a star
 		attributeDecl, err := p.consumeToken(StringToken, StarToken)
 		if err != nil {
 			return nil, err
 		}
 		attributeDecl.Add(decl)
+
+		if quoted {
+			// Check there is a closing quote
+			if _, err := p.consumeToken(quoteToken); err != nil {
+				return nil, fmt.Errorf("expected closing quote: %s", err)
+			}
+		}
 		return attributeDecl, nil
 	}
 
@@ -510,7 +506,7 @@ func (p *parser) parseQuotedToken() (*Decl, error) {
 	quoted := false
 	quoteToken := DoubleQuoteToken
 
-	if p.is(DoubleQuoteToken) || p.is(BacktickToken){
+	if p.is(DoubleQuoteToken) || p.is(BacktickToken) {
 		quoted = true
 		quoteToken = p.cur().Token
 		if err := p.next(); err != nil {
@@ -536,22 +532,7 @@ func (p *parser) parseQuotedToken() (*Decl, error) {
 	return decl, nil
 }
 
-func (p *parser) parseCondition() (*Decl, error) {
-
-	// We may have the WHERE 1 condition
-	if t := p.cur(); t.Token == NumberToken && t.Lexeme == "1" {
-		attributeDecl := NewDecl(t)
-		p.next()
-		// in case of 1 = 1
-		if p.cur().Token == EqualityToken {
-			t, err := p.isNext(NumberToken)
-			if err == nil && t.Lexeme == "1" {
-				p.consumeToken(EqualityToken)
-				p.consumeToken(NumberToken)
-			}
-		}
-		return attributeDecl, nil
-	}
+func (p *parser) parseAttribution() (*Decl, error) {
 
 	// Attribute
 	attributeDecl, err := p.parseAttribute()
@@ -559,53 +540,31 @@ func (p *parser) parseCondition() (*Decl, error) {
 		return nil, err
 	}
 
-	switch p.cur().Token {
-	case EqualityToken, LeftDipleToken, RightDipleToken, LessOrEqualToken, GreaterOrEqualToken:
+	// Equals operator
+	if p.cur().Token == EqualityToken {
 		decl, err := p.consumeToken(p.cur().Token)
 		if err != nil {
 			return nil, err
 		}
 		attributeDecl.Add(decl)
-		break
-	case InToken:
-		inDecl, err := p.parseIn()
-		if err != nil {
-			return nil, err
-		}
-		attributeDecl.Add(inDecl)
-		return attributeDecl, nil
-	case IsToken:
-		log.Debug("parseCondition: IsToken\n")
-		decl, err := p.consumeToken(IsToken)
-		if err != nil {
-			return nil, err
-		}
-		attributeDecl.Add(decl)
-		if p.cur().Token == NotToken {
-			log.Debug("parseCondition: NotToken\n")
-			notDecl, err := p.consumeToken(NotToken)
-			if err != nil {
-				return nil, err
-			}
-			decl.Add(notDecl)
-		}
-		if p.cur().Token == NullToken {
-			log.Debug("parseCondition: NullToken\n")
-			nullDecl, err := p.consumeToken(NullToken)
-			if err != nil {
-				return nil, err
-			}
-			decl.Add(nullDecl)
-		}
-		return attributeDecl, nil
 	}
 
 	// Value
-	valueDecl, err := p.parseValue()
-	if err != nil {
-		return nil, err
+	if p.cur().Token == NullToken {
+		log.Debug("parseAttribution: NullToken\n")
+		nullDecl, err := p.consumeToken(NullToken)
+		if err != nil {
+			return nil, err
+		}
+		attributeDecl.Add(nullDecl)
+	} else {
+		valueDecl, err := p.parseValue()
+		if err != nil {
+			return nil, err
+		}
+		attributeDecl.Add(valueDecl)
 	}
-	attributeDecl.Add(valueDecl)
+
 	return attributeDecl, nil
 }
 
@@ -649,8 +608,6 @@ func (p *parser) parseIn() (*Decl, error) {
 }
 
 func (p *parser) parseValue() (*Decl, error) {
-	debug("parseValue")
-	defer debug("~parseValue")
 	quoted := false
 
 	if p.is(SimpleQuoteToken) || p.is(DoubleQuoteToken) {
@@ -678,6 +635,26 @@ func (p *parser) parseValue() (*Decl, error) {
 		}
 	}
 
+	return valueDecl, nil
+}
+
+func (p *parser) parseStringLiteral() (*Decl, error) {
+	singleQuoted := p.is(SimpleQuoteToken)
+	_, err := p.consumeToken(SimpleQuoteToken, DoubleQuoteToken)
+	if err != nil {
+		return nil, err
+	}
+	valueDecl, err := p.consumeToken(StringToken)
+	if err != nil {
+		return nil, err
+	}
+	if (singleQuoted && p.is(DoubleQuoteToken)) || (!singleQuoted && p.is(SimpleQuoteToken)) {
+		return nil, fmt.Errorf("Quotation marks do not match.")
+	}
+	_, err = p.consumeToken(SimpleQuoteToken, DoubleQuoteToken)
+	if err != nil {
+		return nil, err
+	}
 	return valueDecl, nil
 }
 
@@ -836,7 +813,6 @@ func (p *parser) cur() Token {
 }
 
 func (p *parser) consumeToken(tokenTypes ...int) (*Decl, error) {
-
 	if !p.is(tokenTypes...) {
 		return nil, p.syntaxError()
 	}

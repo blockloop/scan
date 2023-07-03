@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/proullon/ramsql/engine/log"
@@ -19,14 +20,18 @@ import (
             |-> first_name
             |-> email
     |-> VALUES
-        |-> Roullon
-        |-> Pierre
-        |-> pierre.roullon@gmail.com
+        |-> (
+            |-> Roullon
+            |-> Pierre
+            |-> pierre.roullon@gmail.com
+    |-> RETURNING
+            |-> email
+
 */
 func insertIntoTableExecutor(e *Engine, insertDecl *parser.Decl, conn protocol.EngineConn) error {
-
 	// Get table and concerned attributes and write lock it
-	r, attributes, err := getRelation(e, insertDecl.Decl[0])
+	intoDecl := insertDecl.Decl[0]
+	r, attributes, err := getRelation(e, intoDecl)
 	if err != nil {
 		return err
 	}
@@ -38,25 +43,35 @@ func insertIntoTableExecutor(e *Engine, insertDecl *parser.Decl, conn protocol.E
 	if len(insertDecl.Decl) > 2 {
 		for i := range insertDecl.Decl {
 			if insertDecl.Decl[i].Token == parser.ReturningToken {
-				returnedID = insertDecl.Decl[i].Lexeme
+				returningDecl := insertDecl.Decl[i]
+				returnedID = returningDecl.Lexeme
 				break
 			}
 		}
 	}
 
 	// Create a new tuple with values
-	id, err := insert(r, attributes, insertDecl.Decl[1].Decl, returnedID)
-	if err != nil {
-		return err
+	ids := []int64{}
+	valuesDecl := insertDecl.Decl[1]
+	for _, valueListDecl := range valuesDecl.Decl {
+		// TODO handle all inserts atomically
+		id, err := insert(r, attributes, valueListDecl.Decl, returnedID)
+		if err != nil {
+			return err
+		}
+
+		ids = append(ids, id)
 	}
 
 	// if RETURNING decl is not present
 	if returnedID != "" {
 		conn.WriteRowHeader([]string{returnedID})
-		conn.WriteRow([]string{fmt.Sprintf("%v", id)})
+		for _, id := range ids {
+			conn.WriteRow([]string{fmt.Sprintf("%v", id)})
+		}
 		conn.WriteRowEnd()
 	} else {
-		conn.WriteResult(id, 1)
+		conn.WriteResult(ids[len(ids)-1], (int64)(len(ids)))
 	}
 	return nil
 }
@@ -73,7 +88,7 @@ func getRelation(e *Engine, intoDecl *parser.Decl) (*Relation, []*parser.Decl, e
 	// Decl[0] is the table name
 	r := e.relation(intoDecl.Decl[0].Lexeme)
 	if r == nil {
-		return nil, nil, errors.New("table " + intoDecl.Decl[0].Lexeme + " does not exists")
+		return nil, nil, errors.New("table " + intoDecl.Decl[0].Lexeme + " does not exist")
 	}
 
 	for i := range intoDecl.Decl[0].Decl {
@@ -86,8 +101,6 @@ func getRelation(e *Engine, intoDecl *parser.Decl) (*Relation, []*parser.Decl, e
 	return r, intoDecl.Decl[0].Decl, nil
 }
 
-type f func() interface{}
-
 func insert(r *Relation, attributes []*parser.Decl, values []*parser.Decl, returnedID string) (int64, error) {
 	var assigned = false
 	var id int64
@@ -95,19 +108,34 @@ func insert(r *Relation, attributes []*parser.Decl, values []*parser.Decl, retur
 
 	// Create tuple
 	t := NewTuple()
+
+
 	for attrindex, attr := range r.table.attributes {
 		assigned = false
 
 		for x, decl := range attributes {
-
 			if attr.name == decl.Lexeme && attr.autoIncrement == false {
 				// Before adding value in tuple, check it's not a builtin func or arithmetic operation
 				switch values[x].Token {
 				case parser.NowToken:
 					t.Append(time.Now().Format(parser.DateLongFormat))
 				default:
-					t.Append(values[x].Lexeme)
-
+					switch strings.ToLower(attr.typeName) {
+					case "int64", "int":
+						val, err := strconv.ParseInt(values[x].Lexeme, 10, 64)
+						if err != nil {
+							return 0, err
+						}
+						t.Append(val)
+					case "numeric", "decimal":
+						val, err := strconv.ParseFloat(values[x].Lexeme, 64)
+						if err != nil {
+							return 0, err
+						}
+						t.Append(val)
+					default:
+						t.Append(values[x].Lexeme)
+					}
 				}
 				valuesindex = x
 				assigned = true
@@ -137,7 +165,7 @@ func insert(r *Relation, attributes []*parser.Decl, values []*parser.Decl, retur
 			}
 		}
 
-		// If values was not explictly given, set default value
+		// If values was not explicitly given, set default value
 		if assigned == false {
 			switch val := attr.defaultValue.(type) {
 			case func() interface{}:
