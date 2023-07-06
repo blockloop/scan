@@ -97,6 +97,18 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 			if tag != "-" && !isExcluded(tag) {
 				names = append(names, tag)
 			}
+
+			if typeField.Type.Kind() != reflect.Struct {
+				continue
+			}
+		}
+
+		if typeField.Type.Kind() == reflect.Struct {
+			embeddedNames, err := columns(valField.Addr().Interface(), strict, excluded...)
+			if err != nil {
+				return nil, err
+			}
+			names = append(names, embeddedNames...)
 			continue
 		}
 

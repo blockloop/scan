@@ -72,7 +72,7 @@ func TestColumnsAddsComplexTypesWhenStructTag(t *testing.T) {
 
 	cols, err := Columns(&person{})
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{"address"}, cols)
+	assert.EqualValues(t, []string{"address", "Street"}, cols)
 }
 
 func TestColumnsIgnoresComplexTypesWhenNoStructTag(t *testing.T) {
@@ -84,7 +84,7 @@ func TestColumnsIgnoresComplexTypesWhenNoStructTag(t *testing.T) {
 
 	cols, err := Columns(&person{})
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{}, cols)
+	assert.EqualValues(t, []string{"Street"}, cols)
 }
 
 func TestColumnsExcludesFields(t *testing.T) {
