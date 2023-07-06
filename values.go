@@ -39,9 +39,15 @@ func loadFields(val reflect.Value) map[string][]int {
 }
 
 func writeFieldsCache(val reflect.Value) map[string][]int {
+	m := map[string][]int{}
+	writeFields(val, m, []int{})
+	valuesCache.Store(val, m)
+	return m
+}
+
+func writeFields(val reflect.Value, m map[string][]int, index []int) {
 	typ := val.Type()
 	numfield := val.NumField()
-	m := map[string][]int{}
 
 	for i := 0; i < numfield; i++ {
 		if !val.Field(i).CanSet() {
@@ -49,22 +55,16 @@ func writeFieldsCache(val reflect.Value) map[string][]int {
 		}
 
 		field := typ.Field(i)
+		fieldIndex := append(index, field.Index...)
 
-		if field.Anonymous && field.Type.Kind() == reflect.Struct {
-			embeddedFields := writeFieldsCache(val.Field(i))
-			for name, index := range embeddedFields {
-				m[name] = append(field.Index, index...)
-			}
-
+		if field.Type.Kind() == reflect.Struct {
+			writeFields(val.Field(i), m, fieldIndex)
 			continue
 		}
 
-		m[field.Name] = field.Index
+		m[field.Name] = fieldIndex
 		if tag, ok := field.Tag.Lookup(dbTag); ok {
-			m[tag] = field.Index
+			m[tag] = fieldIndex
 		}
 	}
-
-	valuesCache.Store(val, m)
-	return m
 }
