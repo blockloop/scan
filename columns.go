@@ -74,17 +74,19 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 		return res, nil
 	}
 
+	names, err := columnNames(model, strict, excluded...)
+	if err != nil {
+		return nil, fmt.Errorf("columns: %w", err)
+	}
+
+	toCache := append(names, excluded...)
+	columnsCache.Store(model, toCache)
+	return names, nil
+}
+
+func columnNames(model reflect.Value, strict bool, excluded ...string) ([]string, error) {
 	numfield := model.NumField()
 	names := make([]string, 0, numfield)
-
-	isExcluded := func(name string) bool {
-		for _, ex := range excluded {
-			if ex == name {
-				return true
-			}
-		}
-		return false
-	}
 
 	for i := 0; i < numfield; i++ {
 		valField := model.Field(i)
@@ -94,7 +96,7 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 
 		typeField := model.Type().Field(i)
 		if tag, ok := typeField.Tag.Lookup(dbTag); ok {
-			if tag != "-" && !isExcluded(tag) {
+			if tag != "-" && !isExcluded(tag, excluded...) {
 				names = append(names, tag)
 			}
 
@@ -104,7 +106,7 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 		}
 
 		if typeField.Type.Kind() == reflect.Struct {
-			embeddedNames, err := columns(valField.Addr().Interface(), strict, excluded...)
+			embeddedNames, err := columnNames(valField, strict, excluded...)
 			if err != nil {
 				return nil, err
 			}
@@ -116,16 +118,23 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 			continue
 		}
 
-		if isExcluded(typeField.Name) || !supportedColumnType(valField.Kind()) {
+		if isExcluded(typeField.Name, excluded...) || !supportedColumnType(valField.Kind()) {
 			continue
 		}
 
 		names = append(names, typeField.Name)
 	}
 
-	toCache := append(names, excluded...)
-	columnsCache.Store(model, toCache)
 	return names, nil
+}
+
+func isExcluded(name string, excluded ...string) bool {
+	for _, ex := range excluded {
+		if ex == name {
+			return true
+		}
+	}
+	return false
 }
 
 func reflectValue(v interface{}) (reflect.Value, error) {
