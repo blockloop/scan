@@ -33,6 +33,26 @@ func TestValuesScansDBTags(t *testing.T) {
 	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
+func TestValuesScansNestedFields(t *testing.T) {
+	type Address struct {
+		Street string
+		City   string
+	}
+
+	type Person struct {
+		Name string
+		Age  int
+		Address
+	}
+
+	p := &Person{Name: "Brett", Address: Address{Street: "123 Main St", City: "San Francisco"}}
+
+	vals, err := Values([]string{"Name", "Street", "City"}, p)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, []interface{}{"Brett", "123 Main St", "San Francisco"}, vals)
+}
+
 func TestValuesReturnsErrorWhenPassingNonPointer(t *testing.T) {
 	_, err := Values([]string{"Name"}, "")
 	require.Error(t, err)
@@ -80,7 +100,7 @@ func TestValuesReadsFromCacheFirst(t *testing.T) {
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(&person))
-	valuesCache.Store(v, map[string]int{"Name": 0})
+	valuesCache.Store(v, map[string][]int{"Name": {0}})
 
 	vals, err := Values([]string{"Name"}, &person)
 	require.NoError(t, err)

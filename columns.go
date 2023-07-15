@@ -74,17 +74,15 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 		return res, nil
 	}
 
+	names := columnNames(model, strict, excluded...)
+	toCache := append(names, excluded...)
+	columnsCache.Store(model, toCache)
+	return names, nil
+}
+
+func columnNames(model reflect.Value, strict bool, excluded ...string) []string {
 	numfield := model.NumField()
 	names := make([]string, 0, numfield)
-
-	isExcluded := func(name string) bool {
-		for _, ex := range excluded {
-			if ex == name {
-				return true
-			}
-		}
-		return false
-	}
 
 	for i := 0; i < numfield; i++ {
 		valField := model.Field(i)
@@ -93,27 +91,43 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 		}
 
 		typeField := model.Type().Field(i)
-		if tag, ok := typeField.Tag.Lookup(dbTag); ok {
-			if tag != "-" && !isExcluded(tag) {
-				names = append(names, tag)
+
+		if typeField.Type.Kind() == reflect.Struct {
+			embeddedNames := columnNames(valField, strict, excluded...)
+			names = append(names, embeddedNames...)
+			continue
+		}
+
+		fieldName := typeField.Name
+		if tag, hasTag := typeField.Tag.Lookup(dbTag); hasTag {
+			if tag == "-" {
+				continue
 			}
+			fieldName = tag
+		} else if strict {
+			// there's no tag name and we're in strict mode so move on
 			continue
 		}
 
-		if strict {
+		if isExcluded(fieldName, excluded...) {
 			continue
 		}
 
-		if isExcluded(typeField.Name) || !supportedColumnType(valField.Kind()) {
-			continue
+		if supportedColumnType(valField.Kind()) {
+			names = append(names, fieldName)
 		}
-
-		names = append(names, typeField.Name)
 	}
 
-	toCache := append(names, excluded...)
-	columnsCache.Store(model, toCache)
-	return names, nil
+	return names
+}
+
+func isExcluded(name string, excluded ...string) bool {
+	for _, ex := range excluded {
+		if ex == name {
+			return true
+		}
+	}
+	return false
 }
 
 func reflectValue(v interface{}) (reflect.Value, error) {

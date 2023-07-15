@@ -26,22 +26,28 @@ func Values(cols []string, v interface{}) ([]interface{}, error) {
 			return nil, fmt.Errorf("field %T.%q either does not exist or is unexported: %w", v, col, ErrStructFieldMissing)
 		}
 
-		vals[i] = model.Field(j).Interface()
+		vals[i] = model.FieldByIndex(j).Interface()
 	}
 	return vals, nil
 }
 
-func loadFields(val reflect.Value) map[string]int {
+func loadFields(val reflect.Value) map[string][]int {
 	if cache, cached := valuesCache.Load(val); cached {
-		return cache.(map[string]int)
+		return cache.(map[string][]int)
 	}
 	return writeFieldsCache(val)
 }
 
-func writeFieldsCache(val reflect.Value) map[string]int {
+func writeFieldsCache(val reflect.Value) map[string][]int {
+	m := map[string][]int{}
+	writeFields(val, m, []int{})
+	valuesCache.Store(val, m)
+	return m
+}
+
+func writeFields(val reflect.Value, m map[string][]int, index []int) {
 	typ := val.Type()
 	numfield := val.NumField()
-	m := map[string]int{}
 
 	for i := 0; i < numfield; i++ {
 		if !val.Field(i).CanSet() {
@@ -49,11 +55,16 @@ func writeFieldsCache(val reflect.Value) map[string]int {
 		}
 
 		field := typ.Field(i)
-		m[field.Name] = i
+		fieldIndex := append(index, field.Index...)
+
+		if field.Type.Kind() == reflect.Struct {
+			writeFields(val.Field(i), m, fieldIndex)
+			continue
+		}
+
+		m[field.Name] = fieldIndex
 		if tag, ok := field.Tag.Lookup(dbTag); ok {
-			m[tag] = i
+			m[tag] = fieldIndex
 		}
 	}
-	valuesCache.Store(val, m)
-	return m
 }

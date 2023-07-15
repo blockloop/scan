@@ -63,16 +63,76 @@ func TestColumnsIgnoresPrivateFields(t *testing.T) {
 	assert.EqualValues(t, []string{"Age"}, cols)
 }
 
-func TestColumnsAddsComplexTypesWhenStructTag(t *testing.T) {
+func TestColumnsAddsComplexTypesWhenNoStructTag(t *testing.T) {
 	type person struct {
 		Address struct {
 			Street string
+		}
+	}
+
+	cols, err := Columns(&person{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"Street"}, cols)
+}
+
+func TestColumnsAddsComplexTypesWhenStructTag(t *testing.T) {
+	type person struct {
+		Address struct {
+			Street string `db:"address.street"`
+		}
+	}
+
+	cols, err := Columns(&person{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"address.street"}, cols)
+}
+
+func TestColumnsDoesNotAddStructTag(t *testing.T) {
+	type person struct {
+		Address struct {
+			Street string `db:"address.street"`
 		} `db:"address"`
 	}
 
 	cols, err := Columns(&person{})
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{"address"}, cols)
+	assert.EqualValues(t, []string{"address.street"}, cols)
+}
+
+func TestColumnsStrictAddsComplexTypesWhenStructTag(t *testing.T) {
+	type person struct {
+		Address struct {
+			Street string `db:"address.street"`
+		}
+	}
+
+	cols, err := ColumnsStrict(&person{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"address.street"}, cols)
+}
+
+func TestColumnsStrictDoesNotAddComplexTypesWhenNoStructTag(t *testing.T) {
+	type person struct {
+		Address struct {
+			Street string
+		}
+	}
+
+	cols, err := ColumnsStrict(&person{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{}, cols)
+}
+
+func TestColumnsStrictAddsComplexTypesRegardlessOfStructTag(t *testing.T) {
+	type person struct {
+		Address struct {
+			Street string `db:"address.street"`
+		} `db:"-"`
+	}
+
+	cols, err := ColumnsStrict(&person{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"address.street"}, cols)
 }
 
 func TestColumnsIgnoresComplexTypesWhenNoStructTag(t *testing.T) {
@@ -84,7 +144,7 @@ func TestColumnsIgnoresComplexTypesWhenNoStructTag(t *testing.T) {
 
 	cols, err := Columns(&person{})
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{}, cols)
+	assert.EqualValues(t, []string{"Street"}, cols)
 }
 
 func TestColumnsExcludesFields(t *testing.T) {
