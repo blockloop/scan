@@ -74,17 +74,13 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 		return res, nil
 	}
 
-	names, err := columnNames(model, strict, excluded...)
-	if err != nil {
-		return nil, fmt.Errorf("columns: %w", err)
-	}
-
+	names := columnNames(model, strict, excluded...)
 	toCache := append(names, excluded...)
 	columnsCache.Store(model, toCache)
 	return names, nil
 }
 
-func columnNames(model reflect.Value, strict bool, excluded ...string) ([]string, error) {
+func columnNames(model reflect.Value, strict bool, excluded ...string) []string {
 	numfield := model.NumField()
 	names := make([]string, 0, numfield)
 
@@ -97,19 +93,20 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) ([]string
 		typeField := model.Type().Field(i)
 		if tag, ok := typeField.Tag.Lookup(dbTag); ok {
 			if tag != "-" && !isExcluded(tag, excluded...) {
-				names = append(names, tag)
+				// Only append names/tags of the subsequent fields and not the struct field itself
+				if typeField.Type.Kind() == reflect.Struct {
+					embeddedNames := columnNames(valField, strict, excluded...)
+					names = append(names, embeddedNames...)
+				} else {
+					names = append(names, tag)
+				}
 			}
 
-			if typeField.Type.Kind() != reflect.Struct {
-				continue
-			}
+			continue
 		}
 
 		if typeField.Type.Kind() == reflect.Struct {
-			embeddedNames, err := columnNames(valField, strict, excluded...)
-			if err != nil {
-				return nil, err
-			}
+			embeddedNames := columnNames(valField, strict, excluded...)
 			names = append(names, embeddedNames...)
 			continue
 		}
@@ -125,7 +122,7 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) ([]string
 		names = append(names, typeField.Name)
 	}
 
-	return names, nil
+	return names
 }
 
 func isExcluded(name string, excluded ...string) bool {
