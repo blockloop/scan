@@ -91,19 +91,6 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) []string 
 		}
 
 		typeField := model.Type().Field(i)
-		if tag, ok := typeField.Tag.Lookup(dbTag); ok {
-			if tag != "-" && !isExcluded(tag, excluded...) {
-				// Only append names/tags of the subsequent fields and not the struct field itself
-				if typeField.Type.Kind() == reflect.Struct {
-					embeddedNames := columnNames(valField, strict, excluded...)
-					names = append(names, embeddedNames...)
-				} else {
-					names = append(names, tag)
-				}
-			}
-
-			continue
-		}
 
 		if typeField.Type.Kind() == reflect.Struct {
 			embeddedNames := columnNames(valField, strict, excluded...)
@@ -111,15 +98,24 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) []string 
 			continue
 		}
 
-		if strict {
+		fieldName := typeField.Name
+		if tag, hasTag := typeField.Tag.Lookup(dbTag); hasTag {
+			if tag == "-" {
+				continue
+			}
+			fieldName = tag
+		} else if strict {
+			// there's no tag name and we're in strict mode so move on
 			continue
 		}
 
-		if isExcluded(typeField.Name, excluded...) || !supportedColumnType(valField.Kind()) {
+		if isExcluded(fieldName, excluded...) {
 			continue
 		}
 
-		names = append(names, typeField.Name)
+		if supportedColumnType(valField.Kind()) {
+			names = append(names, fieldName)
+		}
 	}
 
 	return names

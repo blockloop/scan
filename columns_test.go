@@ -123,7 +123,7 @@ func TestColumnsStrictDoesNotAddComplexTypesWhenNoStructTag(t *testing.T) {
 	assert.EqualValues(t, []string{}, cols)
 }
 
-func TestColumnsStrictDoesNotAddComplexTypesWhenStructTagIgnored(t *testing.T) {
+func TestColumnsStrictAddsComplexTypesRegardlessOfStructTag(t *testing.T) {
 	type person struct {
 		Address struct {
 			Street string `db:"address.street"`
@@ -132,7 +132,7 @@ func TestColumnsStrictDoesNotAddComplexTypesWhenStructTagIgnored(t *testing.T) {
 
 	cols, err := ColumnsStrict(&person{})
 	assert.NoError(t, err)
-	assert.EqualValues(t, []string{}, cols)
+	assert.EqualValues(t, []string{"address.street"}, cols)
 }
 
 func TestColumnsIgnoresComplexTypesWhenNoStructTag(t *testing.T) {
