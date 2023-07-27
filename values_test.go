@@ -99,10 +99,10 @@ func TestValuesReadsFromCacheFirst(t *testing.T) {
 		Name: "Brett",
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(&person))
-	valuesCache.Store(v, map[string][]int{"Name": {0}})
+	v := reflect.Indirect(reflect.ValueOf(&person)).Type()
+	valuesCache.Store(v, map[string][]int{"fake": {0}})
 
-	vals, err := Values([]string{"Name"}, &person)
+	vals, err := Values([]string{"fake"}, &person)
 	require.NoError(t, err)
 	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }

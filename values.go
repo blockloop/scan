@@ -32,7 +32,7 @@ func Values(cols []string, v interface{}) ([]interface{}, error) {
 }
 
 func loadFields(val reflect.Value) map[string][]int {
-	if cache, cached := valuesCache.Load(val); cached {
+	if cache, cached := valuesCache.Load(val.Type()); cached {
 		return cache.(map[string][]int)
 	}
 	return writeFieldsCache(val)
@@ -41,7 +41,7 @@ func loadFields(val reflect.Value) map[string][]int {
 func writeFieldsCache(val reflect.Value) map[string][]int {
 	m := map[string][]int{}
 	writeFields(val, m, []int{})
-	valuesCache.Store(val, m)
+	valuesCache.Store(val.Type(), m)
 	return m
 }
 

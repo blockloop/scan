@@ -231,13 +231,42 @@ func TestColumnsReadsFromCacheFirst(t *testing.T) {
 		Name string
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(&person))
+	key := cacheKey{
+		Type:   reflect.Indirect(reflect.ValueOf(&person)).Type(),
+		Strict: false,
+	}
 	expected := []string{"fake"}
-	columnsCache.Store(v, expected)
+	columnsCache.Store(key, expected)
 
 	cols, err := Columns(&person)
 	assert.NoError(t, err)
 	assert.EqualValues(t, expected, cols)
+}
+
+func TestColumnsStoresOneCacheEntryPerInstance(t *testing.T) {
+	type person struct {
+		ID   int64
+		Name string
+	}
+
+	before := 0
+	columnsCache.Range(func(key interface{}, value interface{}) bool {
+		before += 1
+		return true
+	})
+
+	for i := 0; i < 10; i++ {
+		_, err := Columns(&person{})
+		assert.NoError(t, err)
+	}
+
+	after := 0
+	columnsCache.Range(func(key interface{}, value interface{}) bool {
+		after += 1
+		return true
+	})
+
+	assert.Equal(t, 1, after-before, "Cache size grew unexpectedly")
 }
 
 func BenchmarkColumnsLargeStruct(b *testing.B) {

@@ -31,6 +31,11 @@ var (
 
 var columnsCache cache = &sync.Map{}
 
+type cacheKey struct {
+	Type   reflect.Type
+	Strict bool
+}
+
 // Columns scans a struct and returns a list of strings
 // that represent the assumed column names based on the
 // db struct tag, or the field name. Any field or struct
@@ -53,7 +58,9 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 		return nil, fmt.Errorf("columns: %w", err)
 	}
 
-	if cache, ok := columnsCache.Load(model); ok {
+	key := cacheKey{model.Type(), strict}
+
+	if cache, ok := columnsCache.Load(key); ok {
 		cached := cache.([]string)
 		res := make([]string, 0, len(cached))
 
@@ -76,7 +83,7 @@ func columns(v interface{}, strict bool, excluded ...string) ([]string, error) {
 
 	names := columnNames(model, strict, excluded...)
 	toCache := append(names, excluded...)
-	columnsCache.Store(model, toCache)
+	columnsCache.Store(key, toCache)
 	return names, nil
 }
 
