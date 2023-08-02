@@ -1,8 +1,11 @@
 package scan
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -267,6 +270,37 @@ func TestColumnsStoresOneCacheEntryPerInstance(t *testing.T) {
 	})
 
 	assert.Equal(t, 1, after-before, "Cache size grew unexpectedly")
+}
+
+func TestValuesWorkWithValidSqlValueTypes(t *testing.T) {
+	type coupon struct {
+		Value   int       `db:"value"`
+		Expires time.Time `db:"expires"`
+	}
+
+	c := &coupon{}
+	cols, err := Columns(c)
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"value", "expires"}, cols)
+}
+
+type Pet struct {
+	Species string
+	Name    string
+}
+
+func (p Pet) Value() (driver.Value, error) {
+	return fmt.Sprintf("%s, a %s", p.Name, p.Species), nil
+}
+
+func TestValuesWorkWithDriverValuerImplementers(t *testing.T) {
+	type person struct {
+		Name string `db:"name"`
+		Pet  Pet    `db:"pet"`
+	}
+	cols, err := ColumnsStrict(&person{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"name", "pet"}, cols)
 }
 
 func BenchmarkColumnsLargeStruct(b *testing.B) {

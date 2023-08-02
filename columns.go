@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
@@ -99,7 +100,7 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) []string 
 
 		typeField := model.Type().Field(i)
 
-		if typeField.Type.Kind() == reflect.Struct {
+		if typeField.Type.Kind() == reflect.Struct || isValidSqlValue(valField) {
 			embeddedNames := columnNames(valField, strict, excluded...)
 			names = append(names, embeddedNames...)
 			continue
@@ -161,4 +162,21 @@ func supportedColumnType(k reflect.Kind) bool {
 	default:
 		return false
 	}
+}
+
+func isValidSqlValue(v reflect.Value) bool {
+	// This method covers two cases in which we know the Value can be converted to sql:
+	// 1. It returns true for sql.driver's type check for types like time.Time
+	// 2. It implements the driver.Valuer interface allowing conversion directly
+	//    into sql statements
+	if driver.IsValue(v.Interface()) {
+		return true
+	}
+
+	valuerType := reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+	if v.Type().Implements(valuerType) {
+		return true
+	}
+
+	return false
 }
