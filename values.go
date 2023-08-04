@@ -50,15 +50,16 @@ func writeFields(val reflect.Value, m map[string][]int, index []int) {
 	numfield := val.NumField()
 
 	for i := 0; i < numfield; i++ {
-		if !val.Field(i).CanSet() {
+		valField := val.Field(i)
+		if !valField.CanSet() {
 			continue
 		}
 
 		field := typ.Field(i)
 		fieldIndex := append(index, field.Index...)
 
-		if field.Type.Kind() == reflect.Struct {
-			writeFields(val.Field(i), m, fieldIndex)
+		if field.Type.Kind() == reflect.Struct && !isValidSqlValue(valField) {
+			writeFields(valField, m, fieldIndex)
 			continue
 		}
 

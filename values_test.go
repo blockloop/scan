@@ -3,6 +3,7 @@ package scan
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -105,6 +106,40 @@ func TestValuesReadsFromCacheFirst(t *testing.T) {
 	vals, err := Values([]string{"fake"}, &person)
 	require.NoError(t, err)
 	assert.EqualValues(t, []interface{}{"Brett"}, vals)
+}
+
+func TestValuesValidSqlTypes(t *testing.T) {
+	tNow := time.Now()
+	type coupon struct {
+		Value   int
+		Expires time.Time
+	}
+	c := &coupon{
+		Value:   25,
+		Expires: tNow,
+	}
+
+	vals, err := Values([]string{"Value", "Expires"}, c)
+	require.NoError(t, err)
+	assert.EqualValues(t, []interface{}{25, tNow}, vals)
+}
+
+func TestValuesDriverValuerImplementers(t *testing.T) {
+	type person struct {
+		Name string `db:"name"`
+		Pet  Pet    `db:"pet"`
+	}
+	p := &person{
+		Name: "Brett",
+		Pet: Pet{
+			Species: "dog",
+			Name:    "Mila",
+		},
+	}
+
+	vals, err := Values([]string{"Name", "Pet"}, p)
+	require.NoError(t, err)
+	assert.EqualValues(t, []interface{}{"Brett", Pet{Name: "Mila", Species: "dog"}}, vals)
 }
 
 // benchmarks
