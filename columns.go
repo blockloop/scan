@@ -100,7 +100,7 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) []string 
 
 		typeField := model.Type().Field(i)
 
-		if typeField.Type.Kind() == reflect.Struct || isValidSqlValue(valField) {
+		if typeField.Type.Kind() == reflect.Struct && !isValidSqlValue(valField) {
 			embeddedNames := columnNames(valField, strict, excluded...)
 			names = append(names, embeddedNames...)
 			continue
@@ -121,7 +121,7 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) []string 
 			continue
 		}
 
-		if supportedColumnType(valField.Kind()) {
+		if supportedColumnType(valField.Kind()) || isValidSqlValue(valField) {
 			names = append(names, fieldName)
 		}
 	}
@@ -174,9 +174,5 @@ func isValidSqlValue(v reflect.Value) bool {
 	}
 
 	valuerType := reflect.TypeOf((*driver.Valuer)(nil)).Elem()
-	if v.Type().Implements(valuerType) {
-		return true
-	}
-
-	return false
+	return v.Type().Implements(valuerType)
 }
