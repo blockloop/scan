@@ -30,7 +30,7 @@ func updateExecutor(e *Engine, updateDecl *parser.Decl, conn protocol.EngineConn
 	// Fetch table from name and write lock it
 	r := e.relation(updateDecl.Decl[0].Lexeme)
 	if r == nil {
-		return fmt.Errorf("Table %s does not exists", updateDecl.Decl[0].Lexeme)
+		return fmt.Errorf("Table %s does not exist", updateDecl.Decl[0].Lexeme)
 	}
 	r.Lock()
 	r.Unlock()
@@ -84,7 +84,11 @@ func setExecutor(setDecl *parser.Decl) (map[string]interface{}, error) {
 	values := make(map[string]interface{})
 
 	for _, attr := range setDecl.Decl {
-		values[attr.Lexeme] = attr.Decl[1].Lexeme
+		if attr.Decl[1].Token == parser.NullToken {
+			values[attr.Lexeme] = nil
+		} else {
+			values[attr.Lexeme] = attr.Decl[1].Lexeme
+		}
 	}
 
 	return values, nil

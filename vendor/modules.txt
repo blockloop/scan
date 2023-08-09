@@ -6,7 +6,7 @@ github.com/davecgh/go-spew/spew
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244
+# github.com/proullon/ramsql v0.0.1
 ## explicit
 github.com/proullon/ramsql/driver
 github.com/proullon/ramsql/engine

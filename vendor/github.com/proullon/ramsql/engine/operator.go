@@ -16,6 +16,8 @@ func NewOperator(token int, lexeme string) (Operator, error) {
 	switch token {
 	case parser.EqualityToken:
 		return equalityOperator, nil
+	case parser.DistinctnessToken:
+		return distinctnessOperator, nil
 	case parser.LeftDipleToken:
 		return lessThanOperator, nil
 	case parser.RightDipleToken:
@@ -36,7 +38,7 @@ func convToDate(t interface{}) (time.Time, error) {
 		log.Debug("convToDate> unexpected type %T\n", t)
 		return time.Time{}, fmt.Errorf("unexpected internal type %T", t)
 	case string:
-		d, err :=parser.ParseDate(string(t))
+		d, err := parser.ParseDate(string(t))
 		if err != nil {
 			return time.Time{}, fmt.Errorf("cannot parse date %v", t)
 		}
@@ -170,6 +172,16 @@ func equalityOperator(leftValue Value, rightValue Value) bool {
 	return false
 }
 
+// DistinctnessOperator checks if given value are distinct
+func distinctnessOperator(leftValue Value, rightValue Value) bool {
+
+	if fmt.Sprintf("%v", leftValue.v) != rightValue.lexeme {
+		return true
+	}
+
+	return false
+}
+
 // TrueOperator always returns true
 func TrueOperator(leftValue Value, rightValue Value) bool {
 	return true
@@ -191,6 +203,10 @@ func inOperator(leftValue Value, rightValue Value) bool {
 	}
 
 	return false
+}
+
+func notInOperator(leftValue Value, rightValue Value) bool {
+	return !inOperator(leftValue, rightValue)
 }
 
 func isNullOperator(leftValue Value, rightValue Value) bool {

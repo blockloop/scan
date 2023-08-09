@@ -28,6 +28,7 @@ const (
 	SimpleQuoteToken
 	StarToken
 	EqualityToken
+	DistinctnessToken
 	PeriodToken
 
 	// First order Token
@@ -41,6 +42,7 @@ const (
 	TruncateToken
 	DropToken
 	GrantToken
+	DistinctToken
 
 	// Second order Token
 
@@ -78,6 +80,9 @@ const (
 	UniqueToken
 	NowToken
 	OffsetToken
+	IndexToken
+	CollateToken
+	NocaseToken
 
 	// Type Token
 
@@ -123,6 +128,7 @@ func (l *lexer) lex(instruction []byte) ([]Token, error) {
 	matchers = append(matchers, l.MatchStarToken)
 	matchers = append(matchers, l.MatchSimpleQuoteToken)
 	matchers = append(matchers, l.MatchEqualityToken)
+	matchers = append(matchers, l.MatchDistinctnessToken)
 	matchers = append(matchers, l.MatchPeriodToken)
 	matchers = append(matchers, l.MatchDoubleQuoteToken)
 	matchers = append(matchers, l.MatchLessOrEqualToken)
@@ -139,6 +145,7 @@ func (l *lexer) lex(instruction []byte) ([]Token, error) {
 	matchers = append(matchers, l.MatchTruncateToken)
 	matchers = append(matchers, l.MatchDropToken)
 	matchers = append(matchers, l.MatchGrantToken)
+	matchers = append(matchers, l.MatchDistinctToken)
 	// Second order Matcher
 	matchers = append(matchers, l.MatchTableToken)
 	matchers = append(matchers, l.MatchFromToken)
@@ -174,6 +181,10 @@ func (l *lexer) lex(instruction []byte) ([]Token, error) {
 	matchers = append(matchers, l.MatchUniqueToken)
 	matchers = append(matchers, l.MatchNowToken)
 	matchers = append(matchers, l.MatchOffsetToken)
+	matchers = append(matchers, l.MatchIndexToken)
+	matchers = append(matchers, l.MatchOnToken)
+	matchers = append(matchers, l.MatchCollateToken)
+	matchers = append(matchers, l.MatchNocaseToken)
 	// Type Matcher
 	matchers = append(matchers, l.MatchPrimaryToken)
 	matchers = append(matchers, l.MatchKeyToken)
@@ -184,8 +195,6 @@ func (l *lexer) lex(instruction []byte) ([]Token, error) {
 
 	var r bool
 	for l.pos < l.instructionLen {
-		// fmt.Printf("Tokens : %v\n\n", l.tokens)
-
 		r = false
 		for _, m := range matchers {
 			if r = m(); r == true {
@@ -244,11 +253,11 @@ func (l *lexer) MatchFalseToken() bool {
 }
 
 func (l *lexer) MatchAscToken() bool {
-	return l.Match([]byte("desc"), DescToken)
+	return l.Match([]byte("asc"), AscToken)
 }
 
 func (l *lexer) MatchDescToken() bool {
-	return l.Match([]byte("asc"), AscToken)
+	return l.Match([]byte("desc"), DescToken)
 }
 
 func (l *lexer) MatchAndToken() bool {
@@ -327,6 +336,10 @@ func (l *lexer) MatchSelectToken() bool {
 	return l.Match([]byte("select"), SelectToken)
 }
 
+func (l *lexer) MatchDistinctToken() bool {
+	return l.Match([]byte("distinct"), DistinctToken)
+}
+
 func (l *lexer) MatchInsertToken() bool {
 	return l.Match([]byte("insert"), InsertToken)
 }
@@ -368,6 +381,10 @@ func (l *lexer) MatchDeleteToken() bool {
 }
 
 func (l *lexer) MatchAutoincrementToken() bool {
+	if l.Match([]byte("auto_increment"), AutoincrementToken) {
+		return true
+	}
+
 	return l.Match([]byte("autoincrement"), AutoincrementToken)
 }
 
@@ -399,6 +416,18 @@ func (l *lexer) MatchOffsetToken() bool {
 	return l.Match([]byte("offset"), OffsetToken)
 }
 
+func (l *lexer) MatchIndexToken() bool {
+	return l.Match([]byte("index"), IndexToken)
+}
+
+func (l *lexer) MatchCollateToken() bool {
+	return l.Match([]byte("collate"), CollateToken)
+}
+
+func (l *lexer) MatchNocaseToken() bool {
+	return l.Match([]byte("nocase"), NocaseToken)
+}
+
 func (l *lexer) MatchStringToken() bool {
 
 	i := l.pos
@@ -428,6 +457,12 @@ func (l *lexer) MatchNumberToken() bool {
 	i := l.pos
 	for i < l.instructionLen && unicode.IsDigit(rune(l.instruction[i])) {
 		i++
+	}
+	if i < l.instructionLen && l.instruction[i] == '.' {
+		i++
+		for i < l.instructionLen && unicode.IsDigit(rune(l.instruction[i])) {
+			i++
+		}
 	}
 
 	if i != l.pos {
@@ -469,6 +504,10 @@ func (l *lexer) MatchStarToken() bool {
 
 func (l *lexer) MatchEqualityToken() bool {
 	return l.MatchSingle('=', EqualityToken)
+}
+
+func (l *lexer) MatchDistinctnessToken() bool {
+	return l.Match([]byte("<>"), DistinctnessToken)
 }
 
 func (l *lexer) MatchLeftDipleToken() bool {
