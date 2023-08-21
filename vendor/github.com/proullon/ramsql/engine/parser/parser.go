@@ -25,16 +25,33 @@ type Decl struct {
 }
 
 // Stringy prints the declaration tree in console
-func (d Decl) Stringy(depth int) {
+func (d Decl) Stringy(depth int, printer func(fmt string, varargs ...any)) {
+
+	if printer == nil {
+		printer = log.Debug
+	}
+
 	indent := ""
 	for i := 0; i < depth; i++ {
 		indent = fmt.Sprintf("%s    ", indent)
 	}
 
-	log.Debug("%s|-> %s\n", indent, d.Lexeme)
+	printer("%s|-> %s (%d)\n", indent, d.Lexeme, d.Token)
 	for _, subD := range d.Decl {
-		subD.Stringy(depth + 1)
+		subD.Stringy(depth+1, printer)
 	}
+}
+
+func (d Decl) Has(t int) (*Decl, bool) {
+	for _, child := range d.Decl {
+		if child.Token == t {
+			return child, true
+		}
+		if cd, ok := child.Has(t); ok {
+			return cd, true
+		}
+	}
+	return nil, false
 }
 
 // Instruction define a valid SQL statement
@@ -43,9 +60,9 @@ type Instruction struct {
 }
 
 // PrettyPrint prints instruction's declarations on console with indentation
-func (i Instruction) PrettyPrint() {
+func (i Instruction) PrettyPrint(printer func(fmt string, varargs ...interface{})) {
 	for _, d := range i.Decls {
-		d.Stringy(0)
+		d.Stringy(0, printer)
 	}
 }
 
@@ -130,8 +147,7 @@ func (p *parser) parse(tokens []Token) ([]Instruction, error) {
 			p.i = append(p.i, *i)
 			break
 		case DropToken:
-			log.Debug("HEY DROP HERE !\n")
-			i, err := p.parseDrop()
+			i, err := p.parseDrop(tokens)
 			if err != nil {
 				return nil, err
 			}
@@ -207,18 +223,18 @@ func (p *parser) parseUpdate() (*Instruction, error) {
 //
 // The generated AST is as follows:
 //
-//  |-> "INSERT" (InsertToken)
-//      |-> "INTO" (IntoToken)
-//          |-> table name
-//              |-> column name
-//              |-> (...)
-//      |-> "VALUES" (ValuesToken)
-//          |-> "(" (BracketOpeningToken)
-//              |-> value
-//              |-> (...)
-//          |-> (...)
-//      |-> "RETURNING" (ReturningToken) (optional)
-//          |-> column name
+//	|-> "INSERT" (InsertToken)
+//	    |-> "INTO" (IntoToken)
+//	        |-> table name
+//	            |-> column name
+//	            |-> (...)
+//	    |-> "VALUES" (ValuesToken)
+//	        |-> "(" (BracketOpeningToken)
+//	            |-> value
+//	            |-> (...)
+//	        |-> (...)
+//	    |-> "RETURNING" (ReturningToken) (optional)
+//	        |-> column name
 func (p *parser) parseInsert() (*Instruction, error) {
 	i := &Instruction{}
 
@@ -237,7 +253,7 @@ func (p *parser) parseInsert() (*Instruction, error) {
 	insertDecl.Add(intoDecl)
 
 	// should be table Name
-	tableDecl, err := p.parseQuotedToken()
+	tableDecl, err := p.parseTableName()
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +343,7 @@ func (p *parser) parseInsert() (*Instruction, error) {
 }
 
 func (p *parser) parseType() (*Decl, error) {
-	typeDecl, err := p.consumeToken(StringToken)
+	typeDecl, err := p.consumeToken(FloatToken, DateToken, DecimalToken, NumberToken, StringToken)
 	if err != nil {
 		return nil, err
 	}
@@ -424,6 +440,94 @@ func (p *parser) parseBuiltinFunc() (*Decl, error) {
 	return d, nil
 }
 
+// parseTableName parse a table of the form
+// schema.table
+// "schema".table
+// "schema"."table"
+// table
+func (p *parser) parseTableName() (*Decl, error) {
+	quoted := false
+	quoteToken := DoubleQuoteToken
+
+	if p.is(DoubleQuoteToken) || p.is(BacktickToken) {
+		quoteToken = p.cur().Token
+		quoted = true
+		if err := p.next(); err != nil {
+			return nil, err
+		}
+	}
+
+	// should be a StringToken here
+	// If there is a point after, it's a table name,
+	// if not, it's the attribute
+	if !p.is(StringToken, StarToken) {
+		return nil, p.syntaxError()
+	}
+	decl := NewDecl(p.cur())
+
+	if quoted {
+		// Check there is a closing quote
+		if _, err := p.mustHaveNext(quoteToken); err != nil {
+			return nil, err
+		}
+	}
+	quoted = false
+
+	// If no next token, and not quoted, then is was the attribute name
+	if err := p.next(); err != nil {
+		return decl, nil
+	}
+
+	// Now, is it a point ?
+	if p.is(PeriodToken) {
+		_, err := p.consumeToken(PeriodToken)
+		if err != nil {
+			return nil, err
+		}
+
+		// mayby attribute is quoted as well (see #62)
+		if p.is(DoubleQuoteToken) || p.is(BacktickToken) {
+			quoteToken = p.cur().Token
+			quoted = true
+			if err := p.next(); err != nil {
+				return nil, err
+			}
+		}
+		// if so, next must be the attribute name or a star
+		attributeDecl, err := p.consumeToken(StringToken, StarToken)
+		if err != nil {
+			return nil, err
+		}
+		decl.Token = SchemaToken
+		attributeDecl.Add(decl)
+
+		if quoted {
+			// Check there is a closing quote
+			if _, err := p.consumeToken(quoteToken); err != nil {
+				return nil, fmt.Errorf("expected closing quote: %s", err)
+			}
+		}
+		return attributeDecl, nil
+	}
+
+	// AS SOMETHING ?
+	if p.is(AsToken) {
+		asDecl, err := p.consumeToken(AsToken)
+		if err != nil {
+			return nil, err
+		}
+		decl.Add(asDecl)
+		aliasDecl, err := p.consumeToken(StringToken)
+		if err != nil {
+			return nil, err
+		}
+		asDecl.Add(aliasDecl)
+	}
+
+	// Then the first string token was the naked attribute name
+	return decl, nil
+}
+
 // parseAttribute parse an attribute of the form
 // table.foo
 // table.*
@@ -453,7 +557,6 @@ func (p *parser) parseAttribute() (*Decl, error) {
 	if quoted {
 		// Check there is a closing quote
 		if _, err := p.mustHaveNext(quoteToken); err != nil {
-			log.Debug("parseAttribute: Missing closing quote")
 			return nil, err
 		}
 	}
@@ -551,7 +654,6 @@ func (p *parser) parseAttribution() (*Decl, error) {
 
 	// Value
 	if p.cur().Token == NullToken {
-		log.Debug("parseAttribution: NullToken\n")
 		nullDecl, err := p.consumeToken(NullToken)
 		if err != nil {
 			return nil, err
@@ -612,25 +714,20 @@ func (p *parser) parseValue() (*Decl, error) {
 
 	if p.is(SimpleQuoteToken) || p.is(DoubleQuoteToken) {
 		quoted = true
-		debug("value %v is quoted!", p.tokens[p.index])
 		_, err := p.consumeToken(SimpleQuoteToken, DoubleQuoteToken)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	valueDecl, err := p.consumeToken(StringToken, NumberToken, DateToken, NowToken)
+	valueDecl, err := p.consumeToken(FloatToken, StringToken, NumberToken, DateToken, NowToken, CurrentSchemaToken, ArgToken, NamedArgToken)
 	if err != nil {
-		debug("parseValue: Wasn't expecting %v\n", p.tokens[p.index])
 		return nil, err
 	}
-	log.Debug("Parsing value %v !\n", valueDecl)
 
 	if quoted {
-		log.Debug("consume quote %v\n", p.tokens[p.index])
 		_, err := p.consumeToken(SimpleQuoteToken, DoubleQuoteToken)
 		if err != nil {
-			debug("uuuh, wasn't a quote")
 			return nil, err
 		}
 	}
@@ -672,6 +769,16 @@ func (p *parser) parseJoin() (*Decl, error) {
 		return nil, err
 	}
 	joinDecl.Add(tableDecl)
+
+	// AS SOMETHING ?
+	if p.is(AsToken) {
+		p.consumeToken(AsToken)
+		aliasDecl, err := p.consumeToken(StringToken)
+		if err != nil {
+			return nil, err
+		}
+		tableDecl.Add(aliasDecl)
+	}
 
 	// ON
 	onDecl, err := p.consumeToken(OnToken)
@@ -723,7 +830,7 @@ func (p *parser) parseListElement() (*Decl, error) {
 	}
 
 	var valueDecl *Decl
-	valueDecl, err := p.consumeToken(StringToken, NumberToken, NullToken, DateToken, NowToken)
+	valueDecl, err := p.consumeToken(FloatToken, StringToken, NumberToken, NullToken, DateToken, NowToken, ArgToken, NamedArgToken)
 	if err != nil {
 		return nil, err
 	}
@@ -770,41 +877,34 @@ func (p *parser) isNot(tokenTypes ...int) bool {
 func (p *parser) isNext(tokenTypes ...int) (t Token, err error) {
 
 	if !p.hasNext() {
-		debug("parser.isNext: has no next")
 		return t, p.syntaxError()
 	}
 
-	debug("parser.isNext %v", tokenTypes)
 	for _, tokenType := range tokenTypes {
 		if p.tokens[p.index+1].Token == tokenType {
 			return p.tokens[p.index+1], nil
 		}
 	}
 
-	debug("parser.isNext: Next (%v) is not among %v", p.cur(), tokenTypes)
 	return t, p.syntaxError()
 }
 
 func (p *parser) mustHaveNext(tokenTypes ...int) (t Token, err error) {
 
 	if !p.hasNext() {
-		debug("parser.mustHaveNext: has no next")
 		return t, p.syntaxError()
 	}
 
 	if err = p.next(); err != nil {
-		debug("parser.mustHaveNext: error getting next")
 		return t, err
 	}
 
-	debug("parser.mustHaveNext %v", tokenTypes)
 	for _, tokenType := range tokenTypes {
 		if p.is(tokenType) {
 			return p.tokens[p.index], nil
 		}
 	}
 
-	debug("parser.mustHaveNext: Next (%v) is not among %v", p.cur(), tokenTypes)
 	return t, p.syntaxError()
 }
 
