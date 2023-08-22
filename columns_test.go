@@ -272,10 +272,32 @@ func TestColumnsStoresOneCacheEntryPerInstance(t *testing.T) {
 	assert.Equal(t, 1, after-before, "Cache size grew unexpectedly")
 }
 
-func TestValuesWorkWithValidSqlValueTypes(t *testing.T) {
+func TestColumnsReturnsStructTagsWithPointers(t *testing.T) {
+	type personUpdate struct {
+		Name *string `db:"name"`
+	}
+
+	cols, err := Columns(&personUpdate{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"name"}, cols)
+}
+
+func TestColumnsWorkWithValidSqlValueTypes(t *testing.T) {
 	type coupon struct {
 		Value   int       `db:"value"`
 		Expires time.Time `db:"expires"`
+	}
+
+	c := &coupon{}
+	cols, err := Columns(c)
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"value", "expires"}, cols)
+}
+
+func TestColumnsWorkWithPointerValidSqlTypes(t *testing.T) {
+	type coupon struct {
+		Value   int        `db:"value"`
+		Expires *time.Time `db:"expires"`
 	}
 
 	c := &coupon{}
@@ -309,4 +331,8 @@ func BenchmarkColumnsLargeStruct(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Columns(ls)
 	}
+}
+
+func ptr(s string) *string {
+	return &s
 }

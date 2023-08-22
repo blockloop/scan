@@ -34,6 +34,30 @@ func TestValuesScansDBTags(t *testing.T) {
 	assert.EqualValues(t, []interface{}{"Brett"}, vals)
 }
 
+func TestValuesScansPointerDBTags(t *testing.T) {
+	type person struct {
+		Name *string `db:"n"`
+	}
+
+	p := &person{Name: ptr("Brett")}
+	vals, err := Values([]string{"n"}, p)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, []interface{}{ptr("Brett")}, vals)
+}
+
+func TestValuesReturnsNilPointers(t *testing.T) {
+	type person struct {
+		Name *string `db:"n"`
+	}
+
+	p := &person{Name: nil}
+	vals, err := Values([]string{"n"}, p)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, []interface{}{(*string)(nil)}, vals)
+}
+
 func TestValuesScansNestedFields(t *testing.T) {
 	type Address struct {
 		Street string
@@ -122,6 +146,22 @@ func TestValuesValidSqlTypes(t *testing.T) {
 	vals, err := Values([]string{"Value", "Expires"}, c)
 	require.NoError(t, err)
 	assert.EqualValues(t, []interface{}{25, tNow}, vals)
+}
+
+func TestValuesValidPointerSqlTypes(t *testing.T) {
+	tNow := time.Now()
+	type coupon struct {
+		Value   int
+		Expires *time.Time
+	}
+	c := &coupon{
+		Value:   25,
+		Expires: &tNow,
+	}
+
+	vals, err := Values([]string{"Value", "Expires"}, c)
+	require.NoError(t, err)
+	assert.EqualValues(t, []interface{}{25, &tNow}, vals)
 }
 
 func TestValuesDriverValuerImplementers(t *testing.T) {
