@@ -33,6 +33,7 @@ func exampleDB() *sql.DB {
 	);`,
 		`INSERT INTO person (id, name) VALUES (1, 'brett', 1);`,
 		`INSERT INTO person (id, name) VALUES (2, 'fred', 1);`,
+		`INSERT INTO person (id) VALUES (3);`,
 	)
 }
 
@@ -136,6 +137,53 @@ func ExampleRowStrict() {
 	// {"ID":0,"Name":"brett"}
 }
 
+func ExampleRowPtr() {
+	db := exampleDB()
+	defer db.Close()
+	rows, err := db.Query("SELECT id,name FROM person where id = 3 LIMIT 1")
+	if err != nil {
+		panic(err)
+	}
+
+	var person struct {
+		ID   int
+		Name *string `db:"name"`
+	}
+
+	err = scan.RowStrict(&person, rows)
+	if err != nil {
+		panic(err)
+	}
+
+	json.NewEncoder(os.Stdout).Encode(&person)
+	// Output:
+	// {"ID":0,"Name":null}
+}
+
+func ExampleRowPtrType() {
+	db := exampleDB()
+	defer db.Close()
+	rows, err := db.Query("SELECT id,name FROM person where id = 3 LIMIT 1")
+	if err != nil {
+		panic(err)
+	}
+
+	type NullableString *string
+	var person struct {
+		ID   int
+		Name NullableString `db:"name"`
+	}
+
+	err = scan.RowStrict(&person, rows)
+	if err != nil {
+		panic(err)
+	}
+
+	json.NewEncoder(os.Stdout).Encode(&person)
+	// Output:
+	// {"ID":0,"Name":null}
+}
+
 func ExampleRow_scalar() {
 	db := exampleDB()
 	defer db.Close()
@@ -165,8 +213,8 @@ func ExampleRows() {
 	}
 
 	var persons []struct {
-		ID   int    `db:"id"`
-		Name string `db:"name"`
+		ID   int     `db:"id"`
+		Name *string `db:"name"`
 	}
 
 	err = scan.Rows(&persons, rows)
@@ -176,7 +224,7 @@ func ExampleRows() {
 
 	json.NewEncoder(os.Stdout).Encode(&persons)
 	// Output:
-	// [{"ID":1,"Name":"brett"},{"ID":2,"Name":"fred"}]
+	// [{"ID":1,"Name":"brett"},{"ID":2,"Name":"fred"},{"ID":3,"Name":null}]
 }
 
 func ExampleRowsStrict() {
@@ -189,7 +237,7 @@ func ExampleRowsStrict() {
 
 	var persons []struct {
 		ID   int
-		Name string `db:"name"`
+		Name *string `db:"name"`
 	}
 
 	err = scan.Rows(&persons, rows)
@@ -199,13 +247,13 @@ func ExampleRowsStrict() {
 
 	json.NewEncoder(os.Stdout).Encode(&persons)
 	// Output:
-	// [{"ID":0,"Name":"brett"},{"ID":0,"Name":"fred"}]
+	// [{"ID":0,"Name":"brett"},{"ID":0,"Name":"fred"},{"ID":0,"Name":null}]
 }
 
 func ExampleRows_primitive() {
 	db := exampleDB()
 	defer db.Close()
-	rows, err := db.Query("SELECT name FROM person ORDER BY id ASC")
+	rows, err := db.Query("SELECT name FROM person WHERE name IS NOT NULL ORDER BY id ASC")
 	if err != nil {
 		panic(err)
 	}
