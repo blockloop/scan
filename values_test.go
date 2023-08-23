@@ -58,6 +58,42 @@ func TestValuesReturnsNilPointers(t *testing.T) {
 	assert.EqualValues(t, []interface{}{(*string)(nil)}, vals)
 }
 
+func TestValuesScansSliceDBTags(t *testing.T) {
+	type person struct {
+		Names []string `db:"n"`
+	}
+
+	p := &person{Names: []string{"Brett", "The Big B"}}
+	vals, err := Values([]string{"n"}, p)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, []interface{}{[]string{"Brett", "The Big B"}}, vals)
+}
+
+func TestValuesScansNilSliceDBTags(t *testing.T) {
+	type person struct {
+		Names []string `db:"n"`
+	}
+
+	p := &person{}
+	vals, err := Values([]string{"n"}, p)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, []interface{}{[]string(nil)}, vals)
+}
+
+func TestValuesScansPointerToSliceDBTags(t *testing.T) {
+	type personUpdate struct {
+		Names *[]string `db:"n"`
+	}
+	names := []string{"Jack", "J Man"}
+	p := &personUpdate{Names: &names}
+	vals, err := Values([]string{"n"}, p)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, []interface{}{&names}, vals)
+}
+
 func TestValuesScansNestedFields(t *testing.T) {
 	type Address struct {
 		Street string
