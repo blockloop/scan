@@ -282,6 +282,26 @@ func TestColumnsReturnsStructTagsWithPointers(t *testing.T) {
 	assert.EqualValues(t, []string{"name"}, cols)
 }
 
+func TestColumnsReturnsStructTagsWithArrays(t *testing.T) {
+	type personGetFilter struct {
+		PersonIDs *string `db:"id"`
+	}
+
+	cols, err := Columns(&personGetFilter{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"id"}, cols)
+}
+
+func TestColumnsReturnsStructTagsWithPointersToArrays(t *testing.T) {
+	type personGetFilter struct {
+		PersonIDs *[]string `db:"id"`
+	}
+
+	cols, err := Columns(&personGetFilter{})
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"id"}, cols)
+}
+
 func TestColumnsWorkWithValidSqlValueTypes(t *testing.T) {
 	type coupon struct {
 		Value   int       `db:"value"`

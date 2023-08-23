@@ -159,7 +159,7 @@ func supportedColumnType(v reflect.Value) bool {
 		reflect.Uint64, reflect.Float32, reflect.Float64, reflect.Interface,
 		reflect.String:
 		return true
-	case reflect.Ptr:
+	case reflect.Ptr, reflect.Slice, reflect.Array:
 		ptrVal := reflect.New(v.Type().Elem())
 		return supportedColumnType(ptrVal.Elem())
 	default:
