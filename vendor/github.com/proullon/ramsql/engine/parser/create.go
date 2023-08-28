@@ -36,6 +36,13 @@ func (p *parser) parseCreate(tokens []Token) (*Instruction, error) {
 		}
 		createDecl.Add(d)
 		break
+	case SchemaToken:
+		d, err := p.parseSchema(tokens)
+		if err != nil {
+			return nil, err
+		}
+		createDecl.Add(d)
+		break
 	case UniqueToken:
 		u, err := p.consumeToken(UniqueToken)
 		if err != nil {
@@ -105,10 +112,11 @@ func (p *parser) parseIndex(tokens []Token) (*Decl, error) {
 	p.index++
 
 	// Now we should found table name
-	nameTable, err := p.parseAttribute()
+	nameTable, err := p.parseTableName()
 	if err != nil {
 		return nil, p.syntaxError()
 	}
+	nameTable.Token = TableToken
 	indexDecl.Add(nameTable)
 
 	// Now we should found brackets
@@ -199,7 +207,7 @@ func (p *parser) parseTable(tokens []Token) (*Decl, error) {
 	}
 
 	// Now we should found table name
-	nameTable, err := p.parseAttribute()
+	nameTable, err := p.parseTableName()
 	if err != nil {
 		return nil, p.syntaxError()
 	}
@@ -246,6 +254,8 @@ func (p *parser) parseTable(tokens []Token) (*Decl, error) {
 		// Column constraints can be listed in any order.
 		for p.isNot(BracketClosingToken, CommaToken) {
 			switch p.cur().Token {
+			case UnsignedToken:
+				p.consumeToken(UnsignedToken)
 			case UniqueToken: // UNIQUE
 				uniqueDecl, err := p.consumeToken(UniqueToken)
 				if err != nil {
@@ -343,7 +353,7 @@ func (p *parser) parseDefaultClause() (*Decl, error) {
 	if p.is(SimpleQuoteToken) || p.is(DoubleQuoteToken) {
 		vDecl, err = p.parseStringLiteral()
 	} else {
-		vDecl, err = p.consumeToken(FalseToken, NumberToken, LocalTimestampToken, NowToken)
+		vDecl, err = p.consumeToken(NullToken, FloatToken, FalseToken, NumberToken, LocalTimestampToken, NowToken, ArgToken, NamedArgToken)
 	}
 
 	if err != nil {
@@ -386,4 +396,19 @@ func (p *parser) parsePrimaryKey() (*Decl, error) {
 	}
 
 	return primaryDecl, nil
+}
+
+func (p *parser) parseSchema(tokens []Token) (*Decl, error) {
+	var err error
+	schemaDecl := NewDecl(tokens[p.index])
+	p.index++
+
+	// Now we should found name
+	name, err := p.parseAttribute()
+	if err != nil {
+		return nil, p.syntaxError()
+	}
+	schemaDecl.Add(name)
+
+	return schemaDecl, nil
 }
