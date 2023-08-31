@@ -89,7 +89,9 @@ err = json.NewEncoder(os.Stdout).Encode(&person)
 // {"ID":1,"Name":"brett","Company":{"Name":"costco"}}
 ```
 
+### Custom Column Mapping
 
+By default, column names are mapped [to](https://github.com/blockloop/scan/blob/4741cc8ac5746ca7e5893d3b54a3347a7735c168/columns.go#L35) and [from](https://github.com/blockloop/scan/blob/4741cc8ac5746ca7e5893d3b54a3347a7735c168/scanner.go#L33) database column names using basic title case conversion. You can override this behavior by setting `ColumnsMapper` and `ScannerMapper` to custom functions.
 
 ### Strict Scanning
 
