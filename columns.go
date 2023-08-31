@@ -28,6 +28,11 @@ var (
 	// the struct does not have a field that matches the column
 	// specified.
 	ErrStructFieldMissing = errors.New("struct field missing")
+
+	// ColumnsMapper transforms struct/map field names
+	// into the database column names.
+	// E.g. you can set function for convert CamelCase into snake_case
+	ColumnsMapper = func(name string) string { return name }
 )
 
 var columnsCache cache = &sync.Map{}
@@ -106,7 +111,7 @@ func columnNames(model reflect.Value, strict bool, excluded ...string) []string 
 			continue
 		}
 
-		fieldName := typeField.Name
+		fieldName := ColumnsMapper(typeField.Name)
 		if tag, hasTag := typeField.Tag.Lookup(dbTag); hasTag {
 			if tag == "-" {
 				continue

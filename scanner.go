@@ -27,6 +27,10 @@ var (
 	// OnAutoCloseError can be used to log errors which are returned from rows.Close()
 	// By default this is a NOOP function
 	OnAutoCloseError = func(error) {}
+
+	// ScannerMapper transforms database field names into struct/map field names
+	// E.g. you can set function for convert snake_case into CamelCase
+	ScannerMapper = func(name string) string { return cases.Title(language.English).String(name) }
 )
 
 // Row scans a single row into a single variable. It requires that you use
@@ -174,7 +178,7 @@ func structPointers(sliceItem reflect.Value, cols []string, strict bool) []inter
 			if strict {
 				fieldVal = reflect.ValueOf(nil)
 			} else {
-				fieldVal = sliceItem.FieldByName(cases.Title(language.English).String(colName))
+				fieldVal = sliceItem.FieldByName(ScannerMapper(colName))
 			}
 		}
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
