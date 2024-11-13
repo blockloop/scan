@@ -165,6 +165,8 @@ func initFieldTag(sliceItem reflect.Value, fieldTagMap *map[string]reflect.Value
 	}
 }
 
+var sqlScannerType = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
+
 func structPointers(sliceItem reflect.Value, cols []string, strict bool) []interface{} {
 	pointers := make([]interface{}, 0, len(cols))
 	fieldTag := make(map[string]reflect.Value, len(cols))
@@ -180,7 +182,7 @@ func structPointers(sliceItem reflect.Value, cols []string, strict bool) []inter
 			} else {
 				fieldVal = sliceItem.FieldByName(ScannerMapper(colName))
 				if fieldVal == (reflect.Value{}) {
-					if sliceItem.Addr().Type().Implements(reflect.TypeOf((*sql.Scanner)(nil)).Elem()) {
+					if sliceItem.Addr().Type().Implements(sqlScannerType) {
 						// probably this is a custom struct that implements sql.Scanner.
 						// do our best and don't set "nothing" as a pointer
 						fieldVal = sliceItem
