@@ -179,6 +179,11 @@ func structPointers(sliceItem reflect.Value, cols []string, strict bool) []inter
 				fieldVal = reflect.ValueOf(nil)
 			} else {
 				fieldVal = sliceItem.FieldByName(ScannerMapper(colName))
+				if fieldVal == (reflect.Value{}) {
+					// probably this is a custom struct that implements sql.Scanner.
+					// do our best and don't set "nothing" as a pointer
+					fieldVal = sliceItem
+				}
 			}
 		}
 		if !fieldVal.IsValid() || !fieldVal.CanSet() {
