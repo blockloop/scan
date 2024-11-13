@@ -61,8 +61,9 @@ func (p *parser) parseSelect(tokens []Token) (*Instruction, error) {
 			}
 			if distinctOpen {
 				distinctDecl.Add(attrDecl)
+			} else {
+				selectDecl.Add(attrDecl)
 			}
-			selectDecl.Add(attrDecl)
 		}
 
 		switch {
@@ -95,7 +96,7 @@ func (p *parser) parseSelect(tokens []Token) (*Instruction, error) {
 		if err = p.next(); err != nil {
 			return nil, fmt.Errorf("Unexpected end. Syntax error near %v\n", tokens[p.index])
 		}
-		tableNameDecl, err := p.parseAttribute()
+		tableNameDecl, err := p.parseTableName()
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +132,7 @@ func (p *parser) parseSelect(tokens []Token) (*Instruction, error) {
 			}
 			hazWhereClause = true
 		case OrderToken:
-			if hazWhereClause == false {
+			if !hazWhereClause {
 				// WHERE clause is implicit
 				addImplicitWhereAll(selectDecl)
 			}

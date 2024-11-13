@@ -8,9 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/proullon/ramsql/engine"
+	"github.com/proullon/ramsql/engine/executor"
 	"github.com/proullon/ramsql/engine/log"
-	"github.com/proullon/ramsql/engine/protocol"
 )
 
 func init() {
@@ -18,32 +17,23 @@ func init() {
 	log.SetLevel(log.WarningLevel)
 }
 
-// Server structs holds engine for each sql.DB instance.
-// This way a sql.DB cann open as much connection to engine as wanted
-// without colliding with another engine (during tests for example)
-// with the unique constraint of providing a unique DataSourceName
-type Server struct {
-	endpoint protocol.DriverEndpoint
-	server   *engine.Engine
-
-	// Kill server on last connection closing
-	sync.Mutex
-	connCount int64
-}
-
-// Driver is the driver entrypoint,
-// implementing database/sql/driver interface
+// Driver is the driver entrypoint
+//
+// Drivers should implement Connector and DriverContext interaces.
+//
+// https://pkg.go.dev/database/sql/driver#Connector
+// https://pkg.go.dev/database/sql/driver#DriverContext
 type Driver struct {
-	// Mutex protect the map of Server
+	// Mutex protect the map of engine
 	sync.Mutex
 	// Holds all matching sql.DB instances of RamSQL engine
-	servers map[string]*Server
+	engines map[string]*executor.Engine
 }
 
 // NewDriver creates a driver object
 func NewDriver() *Driver {
 	d := &Driver{}
-	d.servers = make(map[string]*Server)
+	d.engines = make(map[string]*executor.Engine)
 	return d
 }
 
@@ -57,80 +47,55 @@ type connConf struct {
 	Timeout  time.Duration
 }
 
-// Open return an active connection so RamSQL server
-// If there is no connection in pool, start a new server.
-// After first instantiation of the server,
+// Open return an active connection so RamSQL engine
+// If there is no connection in pool, start a new engine.
+// After first instantiation of the engine,
 func (rs *Driver) Open(dsn string) (conn driver.Conn, err error) {
 	rs.Lock()
+	defer rs.Unlock()
 
-	connConf, err := parseConnectionURI(dsn)
+	_, err = parseConnectionURI(dsn)
 	if err != nil {
-		rs.Unlock()
 		return nil, err
 	}
 
-	dsnServer, exist := rs.servers[dsn]
+	dsnengine, exist := rs.engines[dsn]
 	if !exist {
-		driverEndpoint, engineEndpoint, err := endpoints(connConf)
+		e, err := executor.NewEngine()
 		if err != nil {
-			rs.Unlock()
 			return nil, err
 		}
 
-		server, err := engine.New(engineEndpoint)
-		if err != nil {
-			rs.Unlock()
-			return nil, err
-		}
+		rs.engines[dsn] = e
 
-		driverConn, err := driverEndpoint.New(dsn)
-		if err != nil {
-			rs.Unlock()
-			return nil, err
-		}
-
-		s := &Server{
-			endpoint: driverEndpoint,
-			server:   server,
-		}
-		rs.servers[dsn] = s
-
-		rs.Unlock()
-		return newConn(driverConn, s), nil
+		return newConn(e), nil
 	}
 
-	rs.Unlock()
-	driverConn, err := dsnServer.endpoint.New(dsn)
-	return newConn(driverConn, dsnServer), err
-}
-
-func endpoints(conf *connConf) (protocol.DriverEndpoint, protocol.EngineEndpoint, error) {
-	switch conf.Proto {
-	default:
-		driver, engine := protocol.NewChannelEndpoints()
-		return driver, engine, nil
-	}
+	return newConn(dsnengine), err
 }
 
 // The uri need to have the following syntax:
 //
-//   [PROTOCOL_SPECFIIC*]DBNAME/USER/PASSWD
+//	[PROTOCOL_SPECFIIC*]DBNAME/USER/PASSWD
 //
 // where protocol spercific part may be empty (this means connection to
-// local server using default protocol). Currently possible forms:
+// local engine using default protocol). Currently possible forms:
 //
-//   DBNAME/USER/PASSWD
-//   unix:SOCKPATH*DBNAME/USER/PASSWD
-//   unix:SOCKPATH,OPTIONS*DBNAME/USER/PASSWD
-//   tcp:ADDR*DBNAME/USER/PASSWD
-//   tcp:ADDR,OPTIONS*DBNAME/USER/PASSWD
-//   cloudsql:INSTANCE*DBNAME/USER/PASSWD
+//	DBNAME/USER/PASSWD
+//	unix:SOCKPATH*DBNAME/USER/PASSWD
+//	unix:SOCKPATH,OPTIONS*DBNAME/USER/PASSWD
+//	tcp:ADDR*DBNAME/USER/PASSWD
+//	tcp:ADDR,OPTIONS*DBNAME/USER/PASSWD
+//	cloudsql:INSTANCE*DBNAME/USER/PASSWD
 //
 // OPTIONS can contain comma separated list of options in form:
-//   opt1=VAL1,opt2=VAL2,boolopt3,boolopt4
+//
+//	opt1=VAL1,opt2=VAL2,boolopt3,boolopt4
+//
 // Currently implemented options:
-//   laddr   - local address/port (eg. 1.2.3.4:0)
-//   timeout - connect timeout in format accepted by time.ParseDuration
+//
+//	laddr   - local address/port (eg. 1.2.3.4:0)
+//	timeout - connect timeout in format accepted by time.ParseDuration
 func parseConnectionURI(uri string) (*connConf, error) {
 	c := &connConf{}
 
@@ -185,21 +150,4 @@ func parseConnectionURI(uri string) (*connConf, error) {
 	c.User = dup[1]
 	c.Password = dup[2]
 	return c, nil
-}
-
-func (s *Server) openingConn() {
-
-	s.Lock()
-	defer s.Unlock()
-	s.connCount++
-}
-
-func (s *Server) closingConn() {
-	s.Lock()
-	defer s.Unlock()
-	s.connCount--
-
-	if s.connCount == 0 {
-		s.server.Stop()
-	}
 }

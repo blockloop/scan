@@ -6,20 +6,27 @@ github.com/davecgh/go-spew/spew
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/proullon/ramsql v0.0.1
-## explicit
+# github.com/proullon/ramsql v0.1.4
+## explicit; go 1.20
 github.com/proullon/ramsql/driver
-github.com/proullon/ramsql/engine
+github.com/proullon/ramsql/engine/agnostic
+github.com/proullon/ramsql/engine/executor
 github.com/proullon/ramsql/engine/log
 github.com/proullon/ramsql/engine/parser
-github.com/proullon/ramsql/engine/protocol
 # github.com/rogpeppe/go-internal v1.8.1
 ## explicit; go 1.16
 # github.com/stretchr/testify v1.9.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# golang.org/x/text v0.14.0
+# golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
+## explicit; go 1.20
+golang.org/x/exp/constraints
+golang.org/x/exp/slices
+golang.org/x/exp/slog
+golang.org/x/exp/slog/internal
+golang.org/x/exp/slog/internal/buffer
+# golang.org/x/text v0.20.0
 ## explicit; go 1.18
 golang.org/x/text/cases
 golang.org/x/text/internal
