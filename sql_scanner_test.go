@@ -54,7 +54,7 @@ type customScanner struct {
 	v int64
 }
 
-func (c *customScanner) Scan(src any) error {
+func (c *customScanner) Scan(src interface{}) error {
 	switch v := src.(type) {
 	case int64:
 		*c = customScanner{v: v}
