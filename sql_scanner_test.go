@@ -11,9 +11,7 @@ import (
 )
 
 func TestCustomScanner(t *testing.T) {
-	t.Parallel()
-
-	db := mustDB("sql_scanner", `
+	db := mustDB(t.Name(), `
 		CREATE TABLE test
 		(
 			id int PRIMARY KEY,
