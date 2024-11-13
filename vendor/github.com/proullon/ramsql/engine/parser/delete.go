@@ -1,8 +1,6 @@
 package parser
 
-import (
-	"github.com/proullon/ramsql/engine/log"
-)
+import ()
 
 func (p *parser) parseDelete() (*Instruction, error) {
 	i := &Instruction{}
@@ -22,13 +20,14 @@ func (p *parser) parseDelete() (*Instruction, error) {
 	deleteDecl.Add(fromDecl)
 
 	// Should be a table name
-	nameDecl, err := p.parseTableName()
+	nameDecl, err := p.parseQuotedToken()
 	if err != nil {
 		return nil, err
 	}
 	fromDecl.Add(nameDecl)
 
-	log.Debug("WHERE ? %v", p.tokens[p.index])
+	// MAY be WHERE  here
+	debug("WHERE ? %v", p.tokens[p.index])
 	if !p.hasNext() {
 		return i, nil
 	}

@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+
+	"github.com/proullon/ramsql/engine/log"
 )
 
 func (p *parser) parseWhere(selectDecl *Decl) error {
@@ -52,28 +54,13 @@ func (p *parser) parseCondition() (*Decl, error) {
 	// We may have the WHERE 1 condition
 	if t := p.cur(); t.Token == NumberToken && t.Lexeme == "1" {
 		attributeDecl := NewDecl(t)
-
-		// WHERE 1
-		if !p.hasNext() {
-			return attributeDecl, nil
-		}
-		err := p.next()
-		if err != nil {
-			return nil, err
-		}
-
-		// WHERE 1 = 1
+		p.next()
+		// in case of 1 = 1
 		if p.cur().Token == EqualityToken {
 			t, err := p.isNext(NumberToken)
 			if err == nil && t.Lexeme == "1" {
-				_, err = p.consumeToken(EqualityToken)
-				if err != nil {
-					return nil, err
-				}
-				_, err = p.consumeToken(NumberToken)
-				if err != nil {
-					return nil, err
-				}
+				p.consumeToken(EqualityToken)
+				p.consumeToken(NumberToken)
 			}
 		}
 		return attributeDecl, nil
@@ -82,10 +69,7 @@ func (p *parser) parseCondition() (*Decl, error) {
 	// do we have brackets ?
 	hasBracket := false
 	if p.is(BracketOpeningToken) {
-		_, err := p.consumeToken(BracketOpeningToken)
-		if err != nil {
-			return nil, err
-		}
+		p.consumeToken(BracketOpeningToken)
 		hasBracket = true
 	}
 
@@ -102,6 +86,7 @@ func (p *parser) parseCondition() (*Decl, error) {
 			return nil, err
 		}
 		attributeDecl.Add(decl)
+		break
 	case InToken:
 		inDecl, err := p.parseIn()
 		if err != nil {
@@ -128,12 +113,14 @@ func (p *parser) parseCondition() (*Decl, error) {
 		attributeDecl.Add(notDecl)
 		return attributeDecl, nil
 	case IsToken:
+		log.Debug("parseCondition: IsToken\n")
 		decl, err := p.consumeToken(IsToken)
 		if err != nil {
 			return nil, err
 		}
 		attributeDecl.Add(decl)
 		if p.cur().Token == NotToken {
+			log.Debug("parseCondition: NotToken\n")
 			notDecl, err := p.consumeToken(NotToken)
 			if err != nil {
 				return nil, err
@@ -141,6 +128,7 @@ func (p *parser) parseCondition() (*Decl, error) {
 			decl.Add(notDecl)
 		}
 		if p.cur().Token == NullToken {
+			log.Debug("parseCondition: NullToken\n")
 			nullDecl, err := p.consumeToken(NullToken)
 			if err != nil {
 				return nil, err

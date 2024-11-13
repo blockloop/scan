@@ -1,10 +1,13 @@
 package ramsql
 
 import (
-	"context"
 	"database/sql/driver"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/proullon/ramsql/engine/log"
 )
 
 // Stmt implements the Statement interface of sql/driver
@@ -42,6 +45,7 @@ func prepareStatement(c *Conn, query string) *Stmt {
 		numInput: numInput,
 	}
 
+	stmt.conn.mutex.Lock()
 	return stmt
 }
 
@@ -50,7 +54,7 @@ func prepareStatement(c *Conn, query string) *Stmt {
 // As of Go 1.1, a Stmt will not be closed if it's in use
 // by any queries.
 func (s *Stmt) Close() error {
-	return nil
+	return fmt.Errorf("Not implemented.")
 }
 
 // NumInput returns the number of placeholder parameters.
@@ -75,17 +79,33 @@ func (s *Stmt) Exec(args []driver.Value) (r driver.Result, err error) {
 			return
 		}
 	}()
+	defer s.conn.mutex.Unlock()
 
 	if s.query == "" {
 		return nil, fmt.Errorf("empty statement")
 	}
 
-	var cargs []driver.NamedValue
-	for i, arg := range args {
-		cargs = append(cargs, driver.NamedValue{Name: fmt.Sprintf("%d", i+1), Ordinal: i + 1, Value: arg})
+	var finalQuery string
+
+	// replace $* by arguments in query string
+	finalQuery = replaceArguments(s.query, args)
+	log.Info("Exec <%s>\n", finalQuery)
+
+	// Send query to server
+	err = s.conn.conn.WriteExec(finalQuery)
+	if err != nil {
+		log.Warning("Exec: Cannot send query to server: %s", err)
+		return nil, fmt.Errorf("Cannot send query to server: %s", err)
 	}
 
-	return s.conn.ExecContext(context.Background(), s.query, cargs)
+	// Get answer from server
+	lastInsertedID, rowsAffected, err := s.conn.conn.ReadResult()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a driver.Result
+	return newResult(lastInsertedID, rowsAffected), nil
 }
 
 // Query executes a query that may return rows, such as a
@@ -97,14 +117,93 @@ func (s *Stmt) Query(args []driver.Value) (r driver.Rows, err error) {
 			return
 		}
 	}()
+	defer s.conn.mutex.Unlock()
 
 	if s.query == "" {
 		return nil, fmt.Errorf("empty statement")
 	}
-	var cargs []driver.NamedValue
-	for i, arg := range args {
-		cargs = append(cargs, driver.NamedValue{Name: fmt.Sprintf("%d", i+1), Ordinal: i + 1, Value: arg})
+
+	finalQuery := replaceArguments(s.query, args)
+	log.Info("Query < %s >\n", finalQuery)
+	err = s.conn.conn.WriteQuery(finalQuery)
+	if err != nil {
+		return nil, err
 	}
 
-	return s.conn.QueryContext(context.Background(), s.query, cargs)
+	rowsChannel, err := s.conn.conn.ReadRows()
+	if err != nil {
+		return nil, err
+	}
+
+	r = newRows(rowsChannel)
+	return r, nil
+}
+
+// replace $* by arguments in query string
+func replaceArguments(query string, args []driver.Value) string {
+
+	holder := regexp.MustCompile(`[^\$]\$[0-9]+`)
+	replacedQuery := ""
+
+	if strings.Count(query, "?") == len(args) {
+		return replaceArgumentsODBC(query, args)
+	}
+
+	allloc := holder.FindAllIndex([]byte(query), -1)
+	queryB := []byte(query)
+	for i, loc := range allloc {
+		match := queryB[loc[0]+1 : loc[1]]
+
+		index, err := strconv.Atoi(string(match[1:]))
+		if err != nil {
+			log.Warning("Matched %s as a placeholder but cannot get index: %s\n", match, err)
+			return query
+		}
+
+		var v string
+		if args[index-1] == nil {
+			v = "null"
+		} else if b, ok := args[index-1].([]byte); ok {
+			v = fmt.Sprintf("$$%s$$", b)
+		} else {
+			v = fmt.Sprintf("$$%v$$", args[index-1])
+		}
+		if i == 0 {
+			replacedQuery = fmt.Sprintf("%s%s%s", replacedQuery, string(queryB[:loc[0]+1]), v)
+		} else {
+			replacedQuery = fmt.Sprintf("%s%s%s", replacedQuery, string(queryB[allloc[i-1][1]:loc[0]+1]), v)
+		}
+	}
+	// add remaining query
+	replacedQuery = fmt.Sprintf("%s%s", replacedQuery, string(queryB[allloc[len(allloc)-1][1]:]))
+
+	return replacedQuery
+}
+
+func replaceArgumentsODBC(query string, args []driver.Value) string {
+	finalQuery := &strings.Builder{}
+
+	queryParts := strings.Split(query, "?")
+
+	finalQuery.WriteString(queryParts[0])
+
+	for i := range args {
+		var arg string
+		switch v := args[i].(type) {
+		case string:
+			if !strings.HasSuffix(query, "'") {
+				arg = fmt.Sprintf("$$%s$$", v)
+			}
+		case []byte:
+			if !strings.HasSuffix(query, "'") {
+				arg = fmt.Sprintf("$$%s$$", v)
+			}
+		default:
+			arg = fmt.Sprintf("%v", v)
+		}
+		finalQuery.WriteString(arg)
+		finalQuery.WriteString(queryParts[i+1])
+	}
+
+	return finalQuery.String()
 }
