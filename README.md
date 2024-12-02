@@ -1,5 +1,9 @@
 # Scan
 
+> [!NOTE]
+> For all intents and purposes, this project is considered 'complete.' I do not plan on making any changes in the near future and have not written any code here since approximately 2021. To the best of my knowledge, everything functions as intended. If you are seeking a more comprehensive solution, please refer to https://github.com/stytchauth/sqx. That being said, this project operates effectively in its current state and requires no new code. Feel free to fork it and continue development if desired.
+> 
+
 [![GoDoc](https://godoc.org/github.com/blockloop/scan?status.svg)](https://godoc.org/github.com/blockloop/scan)
 [![go test](https://github.com/blockloop/scan/workflows/go%20test/badge.svg)](https://github.com/blockloop/scan/actions)
 [![Coveralls github](https://img.shields.io/coveralls/github/blockloop/scan.svg)](https://coveralls.io/github/blockloop/scan)
