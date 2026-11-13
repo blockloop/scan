@@ -59,7 +59,7 @@ func (c CanonType) Parse(s string) (t Tag, err error) {
 	if changed {
 		tt.RemakeString()
 	}
-	return makeTag(tt), err
+	return makeTag(tt), nil
 }
 
 // Compose creates a Tag from individual parts, which may be of type Tag, Base,
@@ -166,7 +166,9 @@ func ParseAcceptLanguage(s string) (tag []Tag, q []float32, err error) {
 		}
 	}()
 
-	if strings.Count(s, "-") > 1000 {
+	// The BCP 47 scanner aliases '_' to '-' in scanner.init
+	// (internal/language/parse.go); the guard must count both.
+	if strings.Count(s, "-")+strings.Count(s, "_") > 1000 {
 		return nil, nil, errTagListTooLarge
 	}
 
